@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <radialGradient id="bg2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <circle cx="100" cy="100" r="98" fill="url(#bg2)" stroke="#1e40af" stroke-width="1.5"/>
+
+  <!-- Structured layer: lattice/ICAR nodes and edges -->
+  <!-- Edges first (behind nodes) -->
+  <line x1="72" y1="62" x2="100" y2="62" stroke="#3b82f6" stroke-width="1.8" opacity="0.7"/>
+  <line x1="100" y1="62" x2="128" y2="62" stroke="#3b82f6" stroke-width="1.8" opacity="0.7"/>
+  <line x1="60" y1="88" x2="72" y2="62" stroke="#3b82f6" stroke-width="1.8" opacity="0.7"/>
+  <line x1="72" y1="62" x2="100" y2="88" stroke="#3b82f6" stroke-width="1.8" opacity="0.7"/>
+  <line x1="100" y1="62" x2="100" y2="88" stroke="#3b82f6" stroke-width="1.8" opacity="0.7"/>
+  <line x1="128" y1="62" x2="140" y2="88" stroke="#3b82f6" stroke-width="1.8" opacity="0.7"/>
+  <line x1="128" y1="62" x2="100" y2="88" stroke="#3b82f6" stroke-width="1.8" opacity="0.7"/>
+  <line x1="60" y1="88" x2="100" y2="88" stroke="#3b82f6" stroke-width="1.8" opacity="0.7"/>
+  <line x1="100" y1="88" x2="140" y2="88" stroke="#3b82f6" stroke-width="1.8" opacity="0.7"/>
+  <line x1="60" y1="88" x2="72" y2="114" stroke="#3b82f6" stroke-width="1.8" opacity="0.7"/>
+  <line x1="100" y1="88" x2="72" y2="114" stroke="#3b82f6" stroke-width="1.8" opacity="0.7"/>
+  <line x1="100" y1="88" x2="128" y2="114" stroke="#3b82f6" stroke-width="1.8" opacity="0.7"/>
+  <line x1="140" y1="88" x2="128" y2="114" stroke="#3b82f6" stroke-width="1.8" opacity="0.7"/>
+  <line x1="72" y1="114" x2="128" y2="114" stroke="#3b82f6" stroke-width="1.8" opacity="0.7"/>
+
+  <!-- Structured nodes -->
+  <circle cx="72"  cy="62"  r="7" fill="#60a5fa" stroke="#93c5fd" stroke-width="1.2"/>
+  <circle cx="100" cy="62"  r="7" fill="#60a5fa" stroke="#93c5fd" stroke-width="1.2"/>
+  <circle cx="128" cy="62"  r="7" fill="#60a5fa" stroke="#93c5fd" stroke-width="1.2"/>
+  <circle cx="60"  cy="88"  r="7" fill="#60a5fa" stroke="#93c5fd" stroke-width="1.2"/>
+  <circle cx="100" cy="88"  r="9" fill="#93c5fd" stroke="#bfdbfe" stroke-width="1.5"/>
+  <circle cx="140" cy="88"  r="7" fill="#60a5fa" stroke="#93c5fd" stroke-width="1.2"/>
+  <circle cx="72"  cy="114" r="7" fill="#60a5fa" stroke="#93c5fd" stroke-width="1.2"/>
+  <circle cx="128" cy="114" r="7" fill="#60a5fa" stroke="#93c5fd" stroke-width="1.2"/>
+
+  <!-- Unstructured layer: scattered iid dots (smaller, lighter) -->
+  <circle cx="86"  cy="44"  r="3.5" fill="#bfdbfe" opacity="0.5"/>
+  <circle cx="118" cy="50"  r="3"   fill="#bfdbfe" opacity="0.45"/>
+  <circle cx="50"  cy="70"  r="3"   fill="#bfdbfe" opacity="0.45"/>
+  <circle cx="152" cy="72"  r="3.5" fill="#bfdbfe" opacity="0.5"/>
+  <circle cx="48"  cy="108" r="3"   fill="#bfdbfe" opacity="0.45"/>
+  <circle cx="154" cy="104" r="3"   fill="#bfdbfe" opacity="0.45"/>
+  <circle cx="86"  cy="130" r="3.5" fill="#bfdbfe" opacity="0.5"/>
+  <circle cx="118" cy="126" r="3"   fill="#bfdbfe" opacity="0.45"/>
+  <circle cx="62"  cy="130" r="2.5" fill="#bfdbfe" opacity="0.35"/>
+  <circle cx="140" cy="130" r="2.5" fill="#bfdbfe" opacity="0.35"/>
+
+  <!-- Label -->
+  <text x="100" y="162" text-anchor="middle" font-family="Inter,sans-serif"
+        font-size="20" font-weight="800" fill="#ffffff" letter-spacing="-0.5">fBYM2</text>
+  <text x="100" y="178" text-anchor="middle" font-family="Inter,sans-serif"
+        font-size="9" font-weight="500" fill="#93c5fd" letter-spacing="1.5">FLEXIBLE BYM2</text>
+</svg>
