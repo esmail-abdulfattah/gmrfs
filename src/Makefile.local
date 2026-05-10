@@ -1,0 +1,52 @@
+# Local build of the four gmrfs cgeneric shared libraries.
+# Use this to compile and use the .so files directly from src/
+# without going through `R CMD INSTALL`.
+#
+# This file is intentionally NOT named `Makefile` because R CMD INSTALL
+# would then use it instead of `Makevars`, breaking the package build.
+#
+# Usage:
+#   make -f Makefile.local                -- build all four
+#   make -f Makefile.local <model>        -- build one .so (fbesag,
+#                                            collapsed, partial, stacked)
+#   make -f Makefile.local clean          -- remove .o and .so files
+#
+# Override toolchain or flags on the command line, e.g.
+#   make -f Makefile.local CC=clang
+#   make -f Makefile.local CFLAGS="-O3 -march=native -fpic -fopenmp"
+
+CC           ?= gcc
+OPENMP_FLAGS ?= -fopenmp
+CFLAGS       ?= -Wall -fpic $(OPENMP_FLAGS) -O2 -I.
+LDFLAGS      ?= -shared $(OPENMP_FLAGS)
+LIBS         ?= -llapack -lblas -lm
+
+# .so on Linux/macOS, .dll on Windows.
+ifeq ($(OS),Windows_NT)
+    EXT := dll
+else
+    EXT := so
+endif
+
+MODELS := fbesag collapsed partial stacked
+SHLIBS := $(addsuffix .$(EXT),$(MODELS))
+
+.PHONY: all clean $(MODELS)
+
+all: $(SHLIBS)
+
+# Each model: <name>.c -> <name>.o -> <name>.<EXT>
+%.$(EXT): %.o
+	$(CC) $(LDFLAGS) -o $@ $< $(LIBS)
+
+%.o: %.c cgeneric.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+# Convenience aliases: `make -f Makefile.local fbesag` builds fbesag.<EXT>.
+fbesag:    fbesag.$(EXT)
+collapsed: collapsed.$(EXT)
+partial:   partial.$(EXT)
+stacked:   stacked.$(EXT)
+
+clean:
+	rm -f *.o $(SHLIBS)

@@ -1,0 +1,6 @@
+useDynLib(gmrfs, .registration = TRUE)
+
+export(fbesag)
+export(cblocks)
+export(pblocks)
+export(sblocks)

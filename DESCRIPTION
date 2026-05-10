@@ -1,0 +1,26 @@
+Package: gmrfs
+Type: Package
+Title: Adaptive GMRF Models for INLA via cgeneric
+Version: 0.1.0
+Authors@R: c(
+    person("Esmail", "Abdul Fattah",
+           email = "esmail.abdulfattah@kaust.edu.sa",
+           role  = c("aut", "cre"))
+  )
+Description: Wraps four adaptive Gaussian Markov random field models -
+    fbesag (Besag with partitioned precisions), collapsed, partial, and
+    stacked block models - exposed to R-INLA through its cgeneric
+    interface. When INLA ships a precompiled library for a given model
+    (via inla.external.lib), that copy is preferred; otherwise the
+    package's own compiled shared library is used.
+License: GPL (>= 2)
+Encoding: UTF-8
+Depends:
+    R (>= 4.0)
+Imports:
+    INLA,
+    Matrix
+Additional_repositories: https://inla.r-inla-download.org/R/stable
+URL: https://github.com/esmail-abdulfattah/gmrfs
+BugReports: https://github.com/esmail-abdulfattah/gmrfs/issues
+Config/roxygen2/version: 8.0.0
