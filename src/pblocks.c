@@ -1,5 +1,5 @@
 /*
- * partial.c -- block-horseshoe random-effect selection cgeneric
+ * pblocks.c -- block-horseshoe random-effect selection cgeneric (partial).
  */
 
 #include <assert.h>
@@ -160,7 +160,7 @@ static double log_det_from_upper_chol(const double *Sigma, int n)
 }
 
 /* ================================================================== */
-double *inla_cgeneric_partial(inla_cgeneric_cmd_tp cmd,
+double *inla_cgeneric_pblocks(inla_cgeneric_cmd_tp cmd,
                                  double *theta,
                                  inla_cgeneric_data_tp *data)
 {

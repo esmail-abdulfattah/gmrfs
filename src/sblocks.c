@@ -1,5 +1,5 @@
 /*
- * stacked.c
+ * sblocks.c -- block-horseshoe random-effect selection cgeneric (stacked).
  *
  */
 
@@ -118,7 +118,7 @@ static inla_cgeneric_mat_tp *find_mat_named(inla_cgeneric_data_tp *data,
  * column-major (the order inla.as.sparse produces) makes INLA's inner
  * Newton-Raphson on the latent diverge.
  */
-double *inla_cgeneric_stacked(inla_cgeneric_cmd_tp cmd,
+double *inla_cgeneric_sblocks(inla_cgeneric_cmd_tp cmd,
                                double *theta,
                                inla_cgeneric_data_tp *data)
 {

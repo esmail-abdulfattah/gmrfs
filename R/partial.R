@@ -66,8 +66,8 @@ pblocks <- function(n, p, G_list, separate = 1L, tau0 = 1.0,
   R1@i <- R1@i[ord];  R1@j <- R1@j[ord];  R1@x <- R1@x[ord]
 
   cm <- INLA::inla.cgeneric.define(
-    model     = "inla_cgeneric_partial",
-    shlib     = gmrfs_resolve_shlib("partial", shlib, prefer_inla),
+    model     = "inla_cgeneric_pblocks",
+    shlib     = gmrfs_resolve_shlib("pblocks", shlib, prefer_inla),
     n         = 2L * n,
     p         = p,
     G         = G,

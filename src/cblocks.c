@@ -1,5 +1,5 @@
 /*
- * collapsed.c -- block-horseshoe random-effect selection cgeneric.
+ * cblocks.c -- block-horseshoe random-effect selection cgeneric (collapsed).
  *
  */
 
@@ -134,7 +134,7 @@ static double log_det_from_upper_chol(const double *Sigma, int n)
 }
 
 /* ================================================================== */
-double *inla_cgeneric_collapsed(inla_cgeneric_cmd_tp cmd,
+double *inla_cgeneric_cblocks(inla_cgeneric_cmd_tp cmd,
                                    double *theta,
                                    inla_cgeneric_data_tp *data)
 {

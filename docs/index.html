@@ -44,7 +44,7 @@
     <img src="images/gmrfs.svg" alt="gmrfs logo" class="hero-logo" />
     <div class="hero-text">
       <div class="hero-badge">Spatial Statistics · Bayesian Inference · INLA</div>
-      <h1>Gaussian Markov Random Fields</h1>
+      <h1>A Collection of Gaussian Markov Random Fields</h1>
       <p class="hero-sub">
         A collection of extended Gaussian Markov Random Field models
         for Bayesian spatial and spatio-temporal inference,
@@ -126,30 +126,87 @@
         </div>
       </div>
 
-      <!-- fblock -->
+      <!-- sblocks -->
       <div class="model-card">
         <div class="model-logo-wrap">
-          <img src="images/fblock.svg" alt="fBlock logo" class="model-logo" />
+          <img src="images/sblocks.svg" alt="sblocks logo" class="model-logo" />
         </div>
         <div class="model-body">
           <div class="model-header">
-            <span class="model-name">fBlock</span>
-            <span class="badge badge-proposal">Proposal</span>
+            <span class="model-name">sblocks</span>
+            <span class="badge badge-dev">In Development</span>
           </div>
           <p class="model-desc">
-            Block random-effect selection model with a horseshoe prior on
-            per-block precision. Supports any GMRF precision structure per
-            block (AR1, RW, ICAR, kernel). The block-diagonal precision
-            enables simultaneous selection and inference over multiple
-            candidate random effects.
+            Stacked block-diagonal GMRF on latent dim <code>p &times; n</code>.
+            Precision is <code>diag(exp(&theta;<sub>1</sub>) R<sub>1</sub>, &hellip;, exp(&theta;<sub>p</sub>) R<sub>p</sub>)</code>,
+            so each of the <code>p</code> blocks runs independently with its
+            own precision matrix and log-precision hyperparameter.
           </p>
           <div class="model-tags">
             <span class="tag">Block-diagonal</span>
-            <span class="tag">Horseshoe prior</span>
-            <span class="tag">Variable selection</span>
+            <span class="tag">Per-block precision</span>
+            <span class="tag">cgeneric</span>
           </div>
           <div class="model-links">
-            <span class="btn-card btn-card-disabled">Coming soon</span>
+            <a href="https://github.com/esmail-abdulfattah/gmrfs" target="_blank" class="btn-card btn-card-outline">GitHub</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- cblocks -->
+      <div class="model-card">
+        <div class="model-logo-wrap">
+          <img src="images/cblocks.svg" alt="cblocks logo" class="model-logo" />
+        </div>
+        <div class="model-body">
+          <div class="model-header">
+            <span class="model-name">cblocks</span>
+            <span class="badge badge-dev">In Development</span>
+          </div>
+          <p class="model-desc">
+            Collapsed multi-block GMRF: <code>p</code> dense covariance
+            matrices combined into a single latent effect of size
+            <code>n</code> with covariance
+            <code>&Sigma;(&theta;) = &sum;<sub>j</sub> exp(&minus;&theta;<sub>j</sub>) G<sub>j</sub></code>.
+            Each block carries its own log-precision, enabling adaptive
+            weighting of competing covariance structures within one effect.
+          </p>
+          <div class="model-tags">
+            <span class="tag">Multi-covariance</span>
+            <span class="tag">Adaptive weighting</span>
+            <span class="tag">cgeneric</span>
+          </div>
+          <div class="model-links">
+            <a href="https://github.com/esmail-abdulfattah/gmrfs" target="_blank" class="btn-card btn-card-outline">GitHub</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- pblocks -->
+      <div class="model-card">
+        <div class="model-logo-wrap">
+          <img src="images/pblocks.svg" alt="pblocks logo" class="model-logo" />
+        </div>
+        <div class="model-body">
+          <div class="model-header">
+            <span class="model-name">pblocks</span>
+            <span class="badge badge-dev">In Development</span>
+          </div>
+          <p class="model-desc">
+            Partial split GMRF on latent dim <code>2n</code>: the chosen
+            block is separated with its own precision
+            <code>exp(&theta;<sub>1</sub>) R<sub>1</sub></code>, while the
+            remaining <code>p &minus; 1</code> covariances are collapsed
+            into a single pooled second block. Useful when one component
+            should keep its distinct structure and the rest can share scale.
+          </p>
+          <div class="model-tags">
+            <span class="tag">Two-block split</span>
+            <span class="tag">Pooled precision</span>
+            <span class="tag">cgeneric</span>
+          </div>
+          <div class="model-links">
+            <a href="https://github.com/esmail-abdulfattah/gmrfs" target="_blank" class="btn-card btn-card-outline">GitHub</a>
           </div>
         </div>
       </div>

@@ -38,8 +38,8 @@ cblocks <- function(n, p, G_list, tau0 = 1.0, shlib = NULL,
   }
 
   INLA::inla.cgeneric.define(
-    model = "inla_cgeneric_collapsed",
-    shlib = gmrfs_resolve_shlib("collapsed", shlib, prefer_inla),
+    model = "inla_cgeneric_cblocks",
+    shlib = gmrfs_resolve_shlib("cblocks", shlib, prefer_inla),
     n     = n,
     p     = p,
     G     = G,

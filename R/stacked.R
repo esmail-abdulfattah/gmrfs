@@ -44,8 +44,8 @@ sblocks <- function(n, p, R_list, tau0 = 1.0, shlib = NULL,
   }
 
   INLA::inla.cgeneric.define(
-    model        = "inla_cgeneric_stacked",
-    shlib        = gmrfs_resolve_shlib("stacked", shlib, prefer_inla),
+    model        = "inla_cgeneric_sblocks",
+    shlib        = gmrfs_resolve_shlib("sblocks", shlib, prefer_inla),
     n            = as.integer(n * p),
     p            = p,
     R_stacked    = R_stacked,

@@ -1,0 +1,41 @@
+<svg width="100%" viewBox="215 35 250 250" role="img" xmlns="http://www.w3.org/2000/svg">
+  <title>sblocks icon</title>
+  <desc>An icon for sblocks: a block-diagonal precision matrix shown as three independent lattice blocks stepping along the diagonal.</desc>
+
+  <rect x="220" y="40" width="240" height="240" rx="48" fill="#0f172a"/>
+
+  <!-- Block 1 (top-left) -->
+  <rect x="232" y="58" width="85" height="85" rx="14" fill="#60a5fa" opacity="0.18"/>
+  <line x1="253" y1="79"  x2="296" y2="79"  stroke="#60a5fa" stroke-width="2.2" opacity="0.85"/>
+  <line x1="253" y1="122" x2="296" y2="122" stroke="#60a5fa" stroke-width="2.2" opacity="0.85"/>
+  <line x1="253" y1="79"  x2="253" y2="122" stroke="#60a5fa" stroke-width="2.2" opacity="0.85"/>
+  <line x1="296" y1="79"  x2="296" y2="122" stroke="#60a5fa" stroke-width="2.2" opacity="0.85"/>
+  <circle cx="253" cy="79"  r="6" fill="#bfdbfe"/>
+  <circle cx="296" cy="79"  r="6" fill="#bfdbfe"/>
+  <circle cx="253" cy="122" r="6" fill="#bfdbfe"/>
+  <circle cx="296" cy="122" r="6" fill="#bfdbfe"/>
+
+  <!-- Block 2 (middle) -->
+  <rect x="297" y="123" width="85" height="85" rx="14" fill="#60a5fa" opacity="0.18"/>
+  <line x1="318" y1="144" x2="361" y2="144" stroke="#60a5fa" stroke-width="2.2" opacity="0.85"/>
+  <line x1="318" y1="187" x2="361" y2="187" stroke="#60a5fa" stroke-width="2.2" opacity="0.85"/>
+  <line x1="318" y1="144" x2="318" y2="187" stroke="#60a5fa" stroke-width="2.2" opacity="0.85"/>
+  <line x1="361" y1="144" x2="361" y2="187" stroke="#60a5fa" stroke-width="2.2" opacity="0.85"/>
+  <circle cx="318" cy="144" r="6" fill="#bfdbfe"/>
+  <circle cx="361" cy="144" r="6" fill="#bfdbfe"/>
+  <circle cx="318" cy="187" r="6" fill="#bfdbfe"/>
+  <circle cx="361" cy="187" r="6" fill="#bfdbfe"/>
+
+  <!-- Block 3 (bottom-right) -->
+  <rect x="362" y="188" width="85" height="85" rx="14" fill="#60a5fa" opacity="0.18"/>
+  <line x1="383" y1="209" x2="426" y2="209" stroke="#60a5fa" stroke-width="2.2" opacity="0.85"/>
+  <line x1="383" y1="252" x2="426" y2="252" stroke="#60a5fa" stroke-width="2.2" opacity="0.85"/>
+  <line x1="383" y1="209" x2="383" y2="252" stroke="#60a5fa" stroke-width="2.2" opacity="0.85"/>
+  <line x1="426" y1="209" x2="426" y2="252" stroke="#60a5fa" stroke-width="2.2" opacity="0.85"/>
+  <circle cx="383" cy="209" r="6" fill="#bfdbfe"/>
+  <circle cx="426" cy="209" r="6" fill="#bfdbfe"/>
+  <circle cx="383" cy="252" r="6" fill="#bfdbfe"/>
+  <circle cx="426" cy="252" r="6" fill="#bfdbfe"/>
+
+  <text x="340" y="335" text-anchor="middle" font-size="24" letter-spacing="0.12em" fill="#faf9f5" font-weight="500">sblocks</text>
+</svg>

@@ -8,7 +8,7 @@
 # Usage:
 #   make -f Makefile.local                -- build all four
 #   make -f Makefile.local <model>        -- build one .so (fbesag,
-#                                            collapsed, partial, stacked)
+#                                            cblocks, pblocks, sblocks)
 #   make -f Makefile.local clean          -- remove .o and .so files
 #
 # Override toolchain or flags on the command line, e.g.
@@ -28,7 +28,7 @@ else
     EXT := so
 endif
 
-MODELS := fbesag collapsed partial stacked
+MODELS := fbesag cblocks pblocks sblocks
 SHLIBS := $(addsuffix .$(EXT),$(MODELS))
 
 .PHONY: all clean $(MODELS)
@@ -43,10 +43,10 @@ all: $(SHLIBS)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 # Convenience aliases: `make -f Makefile.local fbesag` builds fbesag.<EXT>.
-fbesag:    fbesag.$(EXT)
-collapsed: collapsed.$(EXT)
-partial:   partial.$(EXT)
-stacked:   stacked.$(EXT)
+fbesag:  fbesag.$(EXT)
+cblocks: cblocks.$(EXT)
+pblocks: pblocks.$(EXT)
+sblocks: sblocks.$(EXT)
 
 clean:
 	rm -f *.o $(SHLIBS)

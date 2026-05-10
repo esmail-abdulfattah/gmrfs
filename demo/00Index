@@ -1,0 +1,4 @@
+fbesag	Minimal 5-node fbesag() smoke test
+cblocks	Minimal collapsed-block cblocks() smoke test
+pblocks	Minimal partial-block pblocks() smoke test
+sblocks	Minimal stacked-block sblocks() smoke test
