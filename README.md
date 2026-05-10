@@ -3,12 +3,12 @@
 Adaptive GMRF models for [R-INLA](https://www.r-inla.org/) via the `cgeneric`
 interface. Bundles four latent models:
 
-| wrapper     | C entry point            | shipped in INLA? |
-|-------------|--------------------------|------------------|
-| `fbesag()`  | `inla_cgeneric_fbesag`   | yes (today)      |
-| `cblocks()` | `inla_cgeneric_cblocks`  | not yet — built locally |
-| `pblocks()` | `inla_cgeneric_pblocks`  | not yet — built locally |
-| `sblocks()` | `inla_cgeneric_sblocks`  | not yet — built locally |
+| wrapper     | C entry point            |
+|-------------|--------------------------|
+| `fbesag()`  | `inla_cgeneric_fbesag`   |
+| `cblocks()` | `inla_cgeneric_cblocks`  |
+| `pblocks()` | `inla_cgeneric_pblocks`  |
+| `sblocks()` | `inla_cgeneric_sblocks`  |
 
 ## Install
 
@@ -25,7 +25,7 @@ remotes::install_github("esmail-abdulfattah/gmrfs")
 ```
 
 The user's R will compile `src/*.c` at install time. A working `gcc` (with
-OpenMP) plus BLAS/LAPACK is required — same toolchain expectations as any
+OpenMP) plus BLAS/LAPACK is required, same toolchain expectations as any
 package with C in `src/`.
 
 ## Quick start (collapsed)
@@ -64,7 +64,7 @@ demo("sblocks", package = "gmrfs") # stacked blocks
 A green `[OK] ... ran successfully.` line at the end of each confirms the
 wrapper -> shlib -> C symbol -> INLA path is wired correctly.
 
-## Models — input contracts
+## Models, input contracts
 
 All three block models take a length-`p` list of per-block matrices at the
 R layer; the wrappers handle stacking and any required factorisation.
@@ -74,7 +74,7 @@ R layer; the wrappers handle stacking and any required factorisation.
   Inputs: `n`, `p`, `G_list` (length-`p` list of `n x n` covariances),
   `tau0`. `p` hyperparameters; `theta[j]` -> `G_list[[j]]` (no reorder).
 
-- **`pblocks()`** (partial — one block separated, rest collapsed). Latent
+- **`pblocks()`** (partial: one block separated, rest collapsed). Latent
   dim `2 * n`. Block `separate` (default 1) lives at indices `1..n` with
   precision `exp(theta[1]) * R_separate` (where `R_separate =
   G_list[[separate]]^{-1}`); the remaining `p - 1` blocks live at
@@ -84,41 +84,12 @@ R layer; the wrappers handle stacking and any required factorisation.
 
 - **`sblocks()`** (stacked). Latent dim `p * n`. Precision is
   block-diagonal, `diag(exp(theta_1) R_1, ..., exp(theta_p) R_p)`.
-  Inputs: `n`, `p`, `R_list` (length-`p` list of `n x n` precisions —
+  Inputs: `n`, `p`, `R_list` (length-`p` list of `n x n` precisions,
   typically `R_j = G_j^{-1}`), `tau0`. `p` hyperparameters.
 
 - **`fbesag()`** (partitioned Besag with `P` partitions). Inputs:
   `graph`, `id` (region -> partition map), `sd_gamma`, PC-prior
   `param = list(p1, p2)`. `P` hyperparameters.
-
-## Identifiability — check before fitting
-
-Variance components from a sum `s = sum_j u_j` with `u_j ~ N(0,
-sigma_j^2 G_j^{-1})` are only jointly identifiable if the `G_j` are
-*shaped differently*. If two `G_j` have similar eigenstructure, the
-collapsed model will smear variance across them.
-
-The Frobenius cosine matrix between blocks is the right pre-flight check:
-
-```r
-C_jk <- function(A, B) sum(A * B) / sqrt(sum(A * A) * sum(B * B))
-C    <- outer(seq_along(G_list), seq_along(G_list),
-              Vectorize(function(j, k) C_jk(G_list[[j]], G_list[[k]])))
-e    <- eigen(C, symmetric = TRUE, only.values = TRUE)$values
-```
-
-`C[j,j] = 1`; off-diagonals near 1 mean blocks `j` and `k` look the same.
-Smallest eigenvalue of `C` (or its condition number) is the single number
-to watch:
-
-| smallest eigenvalue | verdict      |
-|---------------------|--------------|
-| > 0.1               | OK           |
-| 0.01 -- 0.1         | MARGINAL     |
-| < 0.01              | CONFOUNDED — drop or restructure a block |
-
-The `gmrfs_test/` companion repo bundles a `check_block_identifiability()`
-helper that prints `C`, its eigenvalues, and per-block effective rank.
 
 ## License
 
