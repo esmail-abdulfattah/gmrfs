@@ -18,8 +18,8 @@
 #' @return cgeneric model handle.  After fitting, `theta[j]` corresponds to
 #'   `G_list[[j]]` (no reordering).
 #' @export
-cblocks <- function(n, p, G_list, tau0 = 1.0, shlib = NULL,
-                    prefer_inla = TRUE, debug = FALSE) {
+cblocks <- function(n, p, G_list, tau0 = 1.0, prior = "horseshoe", param = NULL, fixed = NULL,
+                    shlib = NULL, prefer_inla = TRUE, debug = FALSE) {
   if (!requireNamespace("INLA", quietly = TRUE))
     stop("INLA is required", call. = FALSE)
   n <- as.integer(n); p <- as.integer(p)
@@ -27,6 +27,9 @@ cblocks <- function(n, p, G_list, tau0 = 1.0, shlib = NULL,
     stop(sprintf("G_list must be a list of length p = %d", p), call. = FALSE)
   if (!is.numeric(tau0) || length(tau0) != 1L || tau0 <= 0)
     stop("tau0 must be a positive scalar", call. = FALSE)
+  pp <- gmrfs_prior_param(prior, param, tau0)
+  fixed_flag  <- if (is.null(fixed)) 0L else 1L
+  theta_fixed <- if (is.null(fixed)) 0.0 else log(as.numeric(fixed))
 
   ## Stack into one (p*n) x n dense matrix; row block j is G_list[[j]].
   G <- matrix(0.0, p * n, n)
@@ -38,12 +41,16 @@ cblocks <- function(n, p, G_list, tau0 = 1.0, shlib = NULL,
   }
 
   INLA::inla.cgeneric.define(
-    model = "inla_cgeneric_cblocks",
+    model = "inla_cgeneric_gmrfs_cblocks",
     shlib = gmrfs_resolve_shlib("cblocks", shlib, prefer_inla),
     n     = n,
     p     = p,
     G     = G,
     tau0  = as.numeric(tau0),
+    prior_id  = gmrfs_prior_code(prior),
+    param = pp,
+    fixed = fixed_flag,
+    theta_fixed = theta_fixed,
     debug = isTRUE(debug)
   )
 }

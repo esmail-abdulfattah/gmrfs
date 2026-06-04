@@ -40,6 +40,31 @@ gmrfs_resolve_shlib <- function(name, shlib = NULL, prefer_inla = TRUE) {
   gmrfs_own_shlib()
 }
 
+## Map a prior name to the integer code understood by the cgeneric C side
+## (priors.h). Integers are passed reliably to cgeneric models across INLA
+## versions, unlike character arguments.
+gmrfs_prior_code <- function(prior) {
+  codes <- c(horseshoe = 1L, hs = 1L, pc.prec = 2L, pcprec = 2L,
+             loggamma = 3L, gamma = 4L, gaussian = 5L, normal = 5L, flat = 6L)
+  key <- tolower(prior)
+  if (!key %in% names(codes))
+    stop(sprintf("unknown prior '%s'; one of: %s", prior,
+                 paste(unique(names(codes)), collapse = ", ")), call. = FALSE)
+  unname(codes[key])
+}
+
+## Resolve prior parameters: if `param` is NULL, supply the default for the
+## named prior. For the horseshoe (the block models' default) the single
+## parameter is the global scale `tau0`; other priors require explicit `param`.
+gmrfs_prior_param <- function(prior, param, tau0 = 1.0) {
+  if (!is.null(param)) return(as.numeric(param))
+  pl <- tolower(prior)
+  if (pl %in% c("horseshoe", "hs", "flat")) return(as.numeric(tau0))
+  if (pl == "loggamma") return(c(1, 0.00005))
+  stop(sprintf("prior '%s' requires `param` (no default available)", prior),
+       call. = FALSE)
+}
+
 gmrfs_own_shlib <- function() {
   dll <- getLoadedDLLs()[["gmrfs"]]
   if (is.null(dll)) {

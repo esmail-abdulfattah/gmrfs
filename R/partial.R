@@ -22,6 +22,7 @@
 #'   `theta[j]` corresponds to `G_list[[ block_order[j] ]]`.
 #' @export
 pblocks <- function(n, p, G_list, separate = 1L, tau0 = 1.0,
+                    prior = "horseshoe", param = NULL, fixed = NULL,
                     shlib = NULL, prefer_inla = TRUE, debug = FALSE) {
   if (!requireNamespace("INLA", quietly = TRUE))
     stop("INLA is required", call. = FALSE)
@@ -35,6 +36,9 @@ pblocks <- function(n, p, G_list, separate = 1L, tau0 = 1.0,
     stop(sprintf("G_list must be a list of length p = %d", p), call. = FALSE)
   if (!is.numeric(tau0) || length(tau0) != 1L || tau0 <= 0)
     stop("tau0 must be a positive scalar", call. = FALSE)
+  pp <- gmrfs_prior_param(prior, param, tau0)
+  fixed_flag  <- if (is.null(fixed)) 0L else 1L
+  theta_fixed <- if (is.null(fixed)) 0.0 else log(as.numeric(fixed))
 
   ## Reorder so the chosen block goes first; remember the mapping.
   block_order <- c(separate, setdiff(seq_len(p), separate))
@@ -66,7 +70,7 @@ pblocks <- function(n, p, G_list, separate = 1L, tau0 = 1.0,
   R1@i <- R1@i[ord];  R1@j <- R1@j[ord];  R1@x <- R1@x[ord]
 
   cm <- INLA::inla.cgeneric.define(
-    model     = "inla_cgeneric_pblocks",
+    model     = "inla_cgeneric_gmrfs_pblocks",
     shlib     = gmrfs_resolve_shlib("pblocks", shlib, prefer_inla),
     n         = 2L * n,
     p         = p,
@@ -74,6 +78,10 @@ pblocks <- function(n, p, G_list, separate = 1L, tau0 = 1.0,
     R1        = R1,
     R1_logdet = as.numeric(R1_logdet),
     tau0      = as.numeric(tau0),
+    prior_id  = gmrfs_prior_code(prior),
+    param     = pp,
+    fixed     = fixed_flag,
+    theta_fixed = theta_fixed,
     debug     = isTRUE(debug)
   )
   attr(cm, "block_order") <- block_order

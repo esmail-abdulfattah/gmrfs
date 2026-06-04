@@ -9,6 +9,7 @@
 #include <strings.h>
 
 #include "cgeneric.h"
+#include "priors.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -19,56 +20,6 @@
 /* LAPACK */
 extern void dpotrf_(const char *uplo, const int *n, double *a, const int *lda, int *info);
 extern void dpotri_(const char *uplo, const int *n, double *a, const int *lda, int *info);
-
-/* ------------------------------------------------------------------ */
-/*  Numerically stable e^x * E_1(x), x > 0.                            */
-/* ------------------------------------------------------------------ */
-static double expE1(double x)
-{
-    if (!(x > 0.0)) return NAN;
-
-    if (x < 1.0) {
-        const double EG = 0.5772156649015329;
-        double e1 = -EG - log(x);
-        double term = 1.0;
-        for (int k = 1; k < 100; k++) {
-            term *= -x / (double) k;
-            double add = -term / (double) k;
-            e1 += add;
-            if (fabs(add) < 1e-16 * (1.0 + fabs(e1))) break;
-        }
-        return exp(x) * e1;
-    } else {
-        const double TINY = 1e-30;
-        double b = x + 1.0;
-        double d = 1.0 / b;
-        double c = 1.0 / TINY;
-        double h = d;
-        for (int i = 1; i < 200; i++) {
-            double a = -(double)(i * i);
-            b += 2.0;
-            double denom = b + a * d;
-            if (fabs(denom) < TINY) denom = TINY;
-            d = 1.0 / denom;
-            double cnew = b + a / c;
-            if (fabs(cnew) < TINY) cnew = TINY;
-            c = cnew;
-            double del = c * d;
-            h *= del;
-            if (fabs(del - 1.0) < 1e-15) break;
-        }
-        return h;
-    }
-}
-
-static double log_prior_theta(double theta, double tau0)
-{
-    static const double LOG_PI_SQRT_2PI = 1.8378770664093453;
-    double tau02 = tau0 * tau0;
-    double x = (0.5 / tau02) * exp(-theta);
-    double v = expE1(x);
-    return -0.5 * theta + log(v) - LOG_PI_SQRT_2PI - 2.0 * log(tau0);
-}
 
 /* ------------------------------------------------------------------ */
 /*  Lookup helpers                                                     */
@@ -126,6 +77,30 @@ static inla_cgeneric_smat_tp *find_smat_named(inla_cgeneric_data_tp *data,
     return NULL;
 }
 
+/* prior parameter vector */
+static double *find_doubles_named(inla_cgeneric_data_tp *data, const char *name, int *len)
+{
+    for (int k = 0; k < data->n_doubles; k++) {
+        if (!strcasecmp(data->doubles[k]->name, name)) {
+            if (len) *len = data->doubles[k]->len;
+            return data->doubles[k]->doubles;
+        }
+    }
+    if (len) *len = 0;
+    return NULL;
+}
+
+/* effective per-block log-precisions: estimated `theta`, or fixed values
+ * (recycled from length 1) when fixed != 0. Caller frees. */
+static double *gmrfs_theta_eff(int fixed, const double *theta_fixed, int lf,
+                               const double *theta, int p)
+{
+    double *th = Calloc(p, double);
+    for (int j = 0; j < p; j++)
+        th[j] = fixed ? theta_fixed[(lf == 1) ? 0 : j] : (theta ? theta[j] : 0.0);
+    return th;
+}
+
 /* The R wrapper pre-sorts R1's triplets into row-major upper-triangle
  * order before passing in, so the C side can read R1->i, R1->j, R1->x
  * directly without an internal permutation -- and without any shared
@@ -160,7 +135,7 @@ static double log_det_from_upper_chol(const double *Sigma, int n)
 }
 
 /* ================================================================== */
-double *inla_cgeneric_pblocks(inla_cgeneric_cmd_tp cmd,
+double *inla_cgeneric_gmrfs_pblocks(inla_cgeneric_cmd_tp cmd,
                                  double *theta,
                                  inla_cgeneric_data_tp *data)
 {
@@ -176,13 +151,21 @@ double *inla_cgeneric_pblocks(inla_cgeneric_cmd_tp cmd,
     int p_rest = p - 1;                       /* may be 0 if p == 1    */
     assert(p_rest >= 0);
 
+    /* fixed mode: hold block precisions at theta_fixed, expose 0 hyperpar */
+    int fixed = find_int_named(data, "fixed");
+    if (fixed < 0) fixed = 0;
+    int lf = 0;
+    double *theta_fixed = find_doubles_named(data, "theta_fixed", &lf);
+    /* effective log-precisions (length p); block 0 is the separated block. */
+    double *th_eff = gmrfs_theta_eff(fixed, theta_fixed, lf, theta, p);
+
     inla_cgeneric_mat_tp *G = find_mat_named(data, "G");
     assert(G != NULL);
     assert(G->nrow == n * p);
     assert(G->ncol == n);
     /* Block j (0-based) at G->x + j * n * n, row-major. */
     const double *G_rest_base = G->x + (size_t) n * n;        /* skip block 1 */
-    const double *theta_rest  = (theta ? theta + 1 : NULL);
+    const double *theta_rest  = th_eff + 1;
 
     inla_cgeneric_smat_tp *R1 = find_smat_named(data, "R1");
     assert(R1 != NULL);
@@ -236,7 +219,7 @@ double *inla_cgeneric_pblocks(inla_cgeneric_cmd_tp cmd,
         ret[1] = (double) M;
         int k = 0;
         /* Top-left: e^{theta_1} * R_1 in the (already row-major) order R1 was passed. */
-        double w1 = exp(theta[0]);
+        double w1 = exp(th_eff[0]);
         for (int t = 0; t < M_R1; t++) {
             ret[2 + k] = w1 * R1->x[t];
             k++;
@@ -258,9 +241,14 @@ double *inla_cgeneric_pblocks(inla_cgeneric_cmd_tp cmd,
     }
 
     case INLA_CGENERIC_INITIAL: {
-        ret = Calloc(1 + p, double);
-        ret[0] = (double) p;
-        for (int j = 0; j < p; j++) ret[1 + j] = 1.0;
+        if (fixed) {
+            ret = Calloc(1, double);
+            ret[0] = 0.0;                    /* no hyperparameters -- precisions fixed */
+        } else {
+            ret = Calloc(1 + p, double);
+            ret[0] = (double) p;
+            for (int j = 0; j < p; j++) ret[1 + j] = 1.0;
+        }
         break;
     }
 
@@ -283,7 +271,7 @@ double *inla_cgeneric_pblocks(inla_cgeneric_cmd_tp cmd,
 
         double R1_logdet = find_double_named(data, "R1_logdet");
         assert(!isnan(R1_logdet));
-        double half_log_det_Q = 0.5 * ((double) n * theta[0]
+        double half_log_det_Q = 0.5 * ((double) n * th_eff[0]
                                        + R1_logdet - log_det_rest);
         ret = Calloc(1, double);
         ret[0] = half_log_det_Q - 0.5 * (double) N * log(2.0 * M_PI);
@@ -291,11 +279,22 @@ double *inla_cgeneric_pblocks(inla_cgeneric_cmd_tp cmd,
     }
 
     case INLA_CGENERIC_LOG_PRIOR: {
-        double tau0 = find_double_named_default(data, "tau0", 1.0);
-        double lp = 0.0;
-        for (int j = 0; j < p; j++) lp += log_prior_theta(theta[j], tau0);
         ret = Calloc(1, double);
-        ret[0] = lp;
+        if (fixed) {
+            ret[0] = 0.0;                    /* no hyperparameters -> no prior */
+        } else {
+            /* prior from the catalog (priors.h), per block log-precision;
+             * defaults to the horseshoe with scale tau0. */
+            int code = find_int_named(data, "prior_id");
+            if (code < 0) code = GMRFS_PRIOR_HORSESHOE;
+            int np = 0;
+            double *pp = find_doubles_named(data, "param", &np);
+            double defp[1] = { find_double_named_default(data, "tau0", 1.0) };
+            if (!pp) { pp = defp; np = 1; }
+            double lp = 0.0;
+            for (int j = 0; j < p; j++) lp += gmrfs_log_prior_code(code, theta[j], pp, np);
+            ret[0] = lp;
+        }
         break;
     }
 
@@ -305,5 +304,6 @@ double *inla_cgeneric_pblocks(inla_cgeneric_cmd_tp cmd,
         break;
     }
 
+    free(th_eff);
     return ret;
 }

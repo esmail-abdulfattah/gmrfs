@@ -17,8 +17,8 @@
 #' @param debug logical.
 #' @return cgeneric model handle.
 #' @export
-sblocks <- function(n, p, R_list, tau0 = 1.0, shlib = NULL,
-                          prefer_inla = TRUE, debug = FALSE) {
+sblocks <- function(n, p, R_list, tau0 = 1.0, prior = "horseshoe", param = NULL, fixed = NULL,
+                          shlib = NULL, prefer_inla = TRUE, debug = FALSE) {
   if (!requireNamespace("INLA", quietly = TRUE))
     stop("INLA is required", call. = FALSE)
   n <- as.integer(n); p <- as.integer(p)
@@ -26,6 +26,9 @@ sblocks <- function(n, p, R_list, tau0 = 1.0, shlib = NULL,
     stop(sprintf("R_list must be a list of length p = %d", p), call. = FALSE)
   if (!is.numeric(tau0) || length(tau0) != 1L || tau0 <= 0)
     stop("tau0 must be a positive scalar", call. = FALSE)
+  pp <- gmrfs_prior_param(prior, param, tau0)
+  fixed_flag  <- if (is.null(fixed)) 0L else 1L
+  theta_fixed <- if (is.null(fixed)) 0.0 else log(as.numeric(fixed))
 
   ## Stack the per-block precisions into one (p*n) x n dense matrix,
   ## row-major (each block j's R_j occupies rows (j-1)*n+1..j*n).
@@ -44,13 +47,17 @@ sblocks <- function(n, p, R_list, tau0 = 1.0, shlib = NULL,
   }
 
   INLA::inla.cgeneric.define(
-    model        = "inla_cgeneric_sblocks",
+    model        = "inla_cgeneric_gmrfs_sblocks",
     shlib        = gmrfs_resolve_shlib("sblocks", shlib, prefer_inla),
     n            = as.integer(n * p),
     p            = p,
     R_stacked    = R_stacked,
     logdet_R_all = as.numeric(logdet_R_all),
     tau0         = as.numeric(tau0),
+    prior_id  = gmrfs_prior_code(prior),
+    param        = pp,
+    fixed        = fixed_flag,
+    theta_fixed  = theta_fixed,
     debug        = isTRUE(debug)
   )
 }

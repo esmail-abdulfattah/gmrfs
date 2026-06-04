@@ -39,7 +39,7 @@ all: $(SHLIBS)
 %.$(EXT): %.o
 	$(CC) $(LDFLAGS) -o $@ $< $(LIBS)
 
-%.o: %.c cgeneric.h
+%.o: %.c cgeneric.h priors.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 # Convenience aliases: `make -f Makefile.local fbesag` builds fbesag.<EXT>.

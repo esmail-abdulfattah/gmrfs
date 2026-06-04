@@ -1,6 +1,9 @@
 useDynLib(gmrfs, .registration = TRUE)
 
+S3method(print, omp_select)
+
 export(fbesag)
 export(cblocks)
 export(pblocks)
 export(sblocks)
+export(omp_select)

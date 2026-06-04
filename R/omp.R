@@ -1,0 +1,132 @@
+#' Select candidate regions by Orthogonal Matching Pursuit (OMP)
+#'
+#' Greedy, INLA-free selection of the regions most likely to carry signal,
+#' intended as the cheap first stage before an exact [cblocks()] / [pblocks()]
+#' refit on just the selected regions.
+#'
+#' At each step OMP scores every not-yet-selected region by how much of the
+#' current residual lies in its leading eigenspace, selects the best region,
+#' \emph{removes} that region's contribution from the residual, and repeats.
+#' Removing each selected region before scoring the rest deconfounds correlated
+#' regions: a region masked by a stronger, correlated neighbour resurfaces once
+#' that neighbour has been taken out. This typically gives much better recall
+#' than a single one-shot ranking, at a fraction of the cost (no model fit).
+#'
+#' @param y numeric response vector of length `n`.
+#' @param G_list length-`p` list of `n x n` per-region covariance (GRM)
+#'   matrices. Ignored when `V_list` is supplied.
+#' @param K number of leading eigenvectors per region used to represent its
+#'   span (default 5). Capped per region at its number of positive eigenvalues.
+#' @param max_select hard cap on how many regions to select (default 10).
+#' @param standardize if TRUE (default) centre and scale `y` to unit variance
+#'   before selection. Recommended: it makes the noise-floor stopping rule
+#'   scale-free. (Region scaling is irrelevant to OMP, which uses eigenvectors
+#'   only, so kernels do not need standardising.)
+#' @param stop_rule stopping rule. `"noise"` (default) stops early when the
+#'   best remaining score falls to the residual noise floor; `"fixed"` always
+#'   selects `max_select` regions.
+#' @param noise_mult multiplier on the noise floor for the `"noise"` rule
+#'   (default 2.5; larger = stop sooner, fewer regions selected).
+#' @param V_list optional precomputed list of `n x K` orthonormal eigenvector
+#'   matrices (one per region). When supplied, `G_list` is not needed and the
+#'   (expensive) eigendecompositions are skipped --- useful for repeated calls
+#'   on the same set of regions (e.g. many phenotypes / replicates).
+#' @param verbose logical; if TRUE, report each pick.
+#' @return An object of class `"omp_select"`: a list with
+#'   \describe{
+#'     \item{selected}{region indices in selection order (best first).}
+#'     \item{scores}{the score at the moment each region was selected.}
+#'     \item{n_selected}{number of regions selected.}
+#'     \item{residual_var}{`||r||^2 / n` after each pick (the shrinking residual).}
+#'     \item{V_list}{the per-region eigenvectors, so a later call can reuse them
+#'       via the `V_list` argument.}
+#'   }
+#' @seealso [cblocks()], [pblocks()] for the exact refit on the selected regions.
+#' @examples
+#' \dontrun{
+#' ## Stage 1: cheap OMP selection
+#' sel <- omp_select(y, G_list, max_select = 10)
+#' k   <- sel$selected                      # candidate regions, best first
+#'
+#' ## Stage 2: exact refit with cblocks on just those regions
+#' cm  <- cblocks(length(y), length(k), G_list[k], prior = "horseshoe")
+#' fit <- INLA::inla(y ~ 1 + f(idx, model = cm),
+#'                   data = data.frame(y = y, idx = seq_along(y)),
+#'                   family = "gaussian")
+#' ## per-region variance estimates (back on the y scale):
+#' v <- exp(-fit$summary.hyperpar$mode[-1]) * var(y)
+#' }
+#' @export
+omp_select <- function(y, G_list = NULL, K = 5L, max_select = 10L,
+                       standardize = TRUE, stop_rule = c("noise", "fixed"),
+                       noise_mult = 2.5, V_list = NULL, verbose = FALSE) {
+  stop_rule <- match.arg(stop_rule)
+  y <- as.numeric(y); n <- length(y)
+  K <- as.integer(K)
+  if (standardize) {
+    y <- y - mean(y)
+    s <- sqrt(sum(y^2) / n)
+    if (s > 0) y <- y / s
+  }
+
+  ## --- build / validate per-region orthonormal eigenbases ---
+  if (is.null(V_list)) {
+    if (is.null(G_list))
+      stop("supply either `G_list` or `V_list`", call. = FALSE)
+    p <- length(G_list)
+    V_list <- vector("list", p)
+    for (j in seq_len(p)) {
+      Gj <- as.matrix(G_list[[j]])
+      if (nrow(Gj) != n || ncol(Gj) != n)
+        stop(sprintf("G_list[[%d]] must be %d x %d", j, n, n), call. = FALSE)
+      e <- eigen((Gj + t(Gj)) / 2, symmetric = TRUE)
+      pos <- which(e$values > e$values[1] * 1e-8)        # drop ~zero eigenvalues
+      keep <- pos[seq_len(min(K, length(pos)))]
+      V_list[[j]] <- e$vectors[, keep, drop = FALSE]
+    }
+  } else {
+    p <- length(V_list)
+    for (j in seq_len(p))
+      if (nrow(V_list[[j]]) != n)
+        stop(sprintf("V_list[[%d]] must have %d rows", j, n), call. = FALSE)
+  }
+
+  ## --- OMP loop ---
+  max_select <- min(as.integer(max_select), p)
+  r <- y
+  remaining <- seq_len(p)
+  selected <- integer(0); scores <- numeric(0); resid_var <- numeric(0)
+  for (step in seq_len(max_select)) {
+    sc <- vapply(remaining, function(j) {
+      Vj <- V_list[[j]]
+      sum(crossprod(Vj, r)^2) / ncol(Vj)
+    }, numeric(1))
+    bi <- which.max(sc)
+    best <- remaining[bi]; best_sc <- sc[bi]
+    if (stop_rule == "noise" && best_sc < noise_mult * sum(r^2) / n) break
+    Vb <- V_list[[best]]
+    r <- r - Vb %*% crossprod(Vb, r)            # remove region's contribution
+    selected   <- c(selected, best)
+    scores     <- c(scores, best_sc)
+    resid_var  <- c(resid_var, sum(r^2) / n)
+    remaining  <- remaining[-bi]
+    if (verbose)
+      message(sprintf("step %2d: region %d  (score %.4g, residual var %.4g)",
+                      step, best, best_sc, sum(r^2) / n))
+  }
+
+  structure(list(selected = selected, scores = scores,
+                 n_selected = length(selected), residual_var = resid_var,
+                 V_list = V_list, call = match.call()),
+            class = "omp_select")
+}
+
+#' @export
+print.omp_select <- function(x, ...) {
+  cat(sprintf("OMP selection: %d region(s)\n", x$n_selected))
+  if (x$n_selected > 0L) {
+    cat("  order :", paste(x$selected, collapse = " "), "\n")
+    cat("  scores:", paste(sprintf("%.3g", x$scores), collapse = " "), "\n")
+  }
+  invisible(x)
+}
