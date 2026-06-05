@@ -9,7 +9,7 @@ omp_select(
   y,
   G_list = NULL,
   K = "mp",
-  max_select = 10L,
+  max_select = NULL,
   standardize = TRUE,
   stop_rule = c("noise", "fixed"),
   noise_mult = 2.5,
@@ -31,7 +31,10 @@ threshold; a fraction in (0,1) keeps the top directions explaining that share
 of the region's variance; a positive integer fixes the count. Capped per
 region at its number of positive eigenvalues.}
 
-\item{max_select}{hard cap on how many regions to select (default 10).}
+\item{max_select}{optional hard cap on how many regions to select. NULL
+(default) means no artificial cap: selection is driven by the noise-floor stop,
+so it adapts to however many regions carry signal. Set an integer only to bound
+the refit budget (or with stop_rule = "fixed", where it sets the count).}
 
 \item{standardize}{if TRUE (default) centre and scale \code{y} to unit variance
 before selection. Recommended: it makes the noise-floor stopping rule

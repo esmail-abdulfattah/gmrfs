@@ -21,7 +21,11 @@
 #'   fraction in `(0,1)` keeps the top directions explaining that share of the
 #'   region's variance; a positive integer fixes the count. Capped per region
 #'   at its number of positive eigenvalues.
-#' @param max_select hard cap on how many regions to select (default 10).
+#' @param max_select optional hard cap on how many regions to select. `NULL`
+#'   (default) means no artificial cap: selection is driven entirely by the
+#'   noise-floor stop (`stop_rule = "noise"`), so it adapts to however many
+#'   regions actually carry signal. Set an integer only to bound the refit
+#'   budget (or when using `stop_rule = "fixed"`, where it sets the count).
 #' @param standardize if TRUE (default) centre and scale `y` to unit variance
 #'   before selection. Recommended: it makes the noise-floor stopping rule
 #'   scale-free. (Region scaling is irrelevant to OMP, which uses eigenvectors
@@ -61,10 +65,12 @@
 #' v <- exp(-fit$summary.hyperpar$mode[-1]) * var(y)
 #' }
 #' @export
-omp_select <- function(y, G_list = NULL, K = "mp", max_select = 10L,
+omp_select <- function(y, G_list = NULL, K = "mp", max_select = NULL,
                        standardize = TRUE, stop_rule = c("noise", "fixed"),
                        noise_mult = 2.5, V_list = NULL, verbose = FALSE) {
   stop_rule <- match.arg(stop_rule)
+  if (is.null(max_select) && stop_rule == "fixed")
+    stop('`stop_rule = "fixed"` requires an explicit `max_select`', call. = FALSE)
   y <- as.numeric(y); n <- length(y)
   if (is.character(K) && !identical(K, "mp"))
     stop('character `K` must be "mp"', call. = FALSE)
@@ -96,7 +102,7 @@ omp_select <- function(y, G_list = NULL, K = "mp", max_select = 10L,
   }
 
   ## --- OMP loop ---
-  max_select <- min(as.integer(max_select), p)
+  max_select <- if (is.null(max_select)) p else min(as.integer(max_select), p)
   r <- y
   remaining <- seq_len(p)
   selected <- integer(0); scores <- numeric(0); resid_var <- numeric(0)
