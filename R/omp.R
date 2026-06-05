@@ -15,8 +15,12 @@
 #' @param y numeric response vector of length `n`.
 #' @param G_list length-`p` list of `n x n` per-region covariance (GRM)
 #'   matrices. Ignored when `V_list` is supplied.
-#' @param K number of leading eigenvectors per region used to represent its
-#'   span (default 5). Capped per region at its number of positive eigenvalues.
+#' @param K how many leading eigenvectors to keep per region. `"mp"` (default)
+#'   chooses each region's count adaptively from a Marchenko-Pastur eigenvalue
+#'   threshold (keep eigenvalues above `median(ev) * (1 + sqrt(r/n))^2`); a
+#'   fraction in `(0,1)` keeps the top directions explaining that share of the
+#'   region's variance; a positive integer fixes the count. Capped per region
+#'   at its number of positive eigenvalues.
 #' @param max_select hard cap on how many regions to select (default 10).
 #' @param standardize if TRUE (default) centre and scale `y` to unit variance
 #'   before selection. Recommended: it makes the noise-floor stopping rule
@@ -57,12 +61,13 @@
 #' v <- exp(-fit$summary.hyperpar$mode[-1]) * var(y)
 #' }
 #' @export
-omp_select <- function(y, G_list = NULL, K = 5L, max_select = 10L,
+omp_select <- function(y, G_list = NULL, K = "mp", max_select = 10L,
                        standardize = TRUE, stop_rule = c("noise", "fixed"),
                        noise_mult = 2.5, V_list = NULL, verbose = FALSE) {
   stop_rule <- match.arg(stop_rule)
   y <- as.numeric(y); n <- length(y)
-  K <- as.integer(K)
+  if (is.character(K) && !identical(K, "mp"))
+    stop('character `K` must be "mp"', call. = FALSE)
   if (standardize) {
     y <- y - mean(y)
     s <- sqrt(sum(y^2) / n)
@@ -79,10 +84,9 @@ omp_select <- function(y, G_list = NULL, K = 5L, max_select = 10L,
       Gj <- as.matrix(G_list[[j]])
       if (nrow(Gj) != n || ncol(Gj) != n)
         stop(sprintf("G_list[[%d]] must be %d x %d", j, n, n), call. = FALSE)
-      e <- eigen((Gj + t(Gj)) / 2, symmetric = TRUE)
-      pos <- which(e$values > e$values[1] * 1e-8)        # drop ~zero eigenvalues
-      keep <- pos[seq_len(min(K, length(pos)))]
-      V_list[[j]] <- e$vectors[, keep, drop = FALSE]
+      e  <- eigen((Gj + t(Gj)) / 2, symmetric = TRUE)
+      Kj <- .omp_choose_K(e$values, n, K)                # adaptive per-region rank
+      V_list[[j]] <- e$vectors[, seq_len(Kj), drop = FALSE]
     }
   } else {
     p <- length(V_list)
@@ -119,6 +123,28 @@ omp_select <- function(y, G_list = NULL, K = 5L, max_select = 10L,
                  n_selected = length(selected), residual_var = resid_var,
                  V_list = V_list, call = match.call()),
             class = "omp_select")
+}
+
+## Choose how many leading eigenvectors to keep for one region, given its
+## eigenvalues `ev` (descending), sample size `n`, and the rule `K`:
+##   "mp"          -> Marchenko-Pastur edge: keep eigenvalues above
+##                    median(ev) * (1 + sqrt(r/n))^2   (r = # positive eigenvalues)
+##   fraction (0,1)-> keep top directions explaining that share of sum(ev)
+##   integer >= 1  -> fixed count
+## Ported from the former rblocks selector (.rblocks_choose_K).
+.omp_choose_K <- function(ev, n, K) {
+  ev <- ev[ev > ev[1] * 1e-8]               # positive (non-negligible) eigenvalues
+  r  <- length(ev)
+  if (r == 0L) return(0L)
+  if (is.character(K)) {                    # "mp"
+    edge <- stats::median(ev) * (1 + sqrt(r / n))^2
+    return(max(1L, sum(ev > edge)))
+  }
+  if (K > 0 && K < 1) {                     # variance fraction (inertia)
+    cum <- cumsum(ev) / sum(ev)
+    return(max(1L, which(cum >= K)[1]))
+  }
+  min(as.integer(K), r)                     # fixed count
 }
 
 #' @export

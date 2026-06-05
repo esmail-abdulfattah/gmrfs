@@ -8,7 +8,7 @@
 omp_select(
   y,
   G_list = NULL,
-  K = 5L,
+  K = "mp",
   max_select = 10L,
   standardize = TRUE,
   stop_rule = c("noise", "fixed"),
@@ -25,8 +25,11 @@ omp_select(
 \item{G_list}{length-\code{p} list of \code{n x n} per-region covariance (GRM)
 matrices. Ignored when \code{V_list} is supplied.}
 
-\item{K}{number of leading eigenvectors per region used to represent its span
-(default 5). Capped per region at its number of positive eigenvalues.}
+\item{K}{how many leading eigenvectors to keep per region. "mp" (default)
+chooses each region's count adaptively from a Marchenko-Pastur eigenvalue
+threshold; a fraction in (0,1) keeps the top directions explaining that share
+of the region's variance; a positive integer fixes the count. Capped per
+region at its number of positive eigenvalues.}
 
 \item{max_select}{hard cap on how many regions to select (default 10).}
 
