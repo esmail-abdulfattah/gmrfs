@@ -1,4 +1,4 @@
 inla_cgeneric_fbesag
-inla_cgeneric_cblocks
-inla_cgeneric_pblocks
-inla_cgeneric_sblocks
+inla_cgeneric_gmrfs_cblocks
+inla_cgeneric_gmrfs_pblocks
+inla_cgeneric_gmrfs_sblocks
