@@ -108,10 +108,14 @@ static double *gmrfs_theta_eff(int fixed, const double *theta_fixed, int lf,
  * the whole file trivially thread-safe under any num.threads setting.
  */
 
-/* Sigma_rest = sum_{j=2}^{p} exp(-theta_j) G_j -> upper triangle of dst. */
+/* Sigma_rest = sum_{j=2}^{p} exp(-theta_j) G_j + nugget * I -> upper
+ * triangle of dst. The optional `nugget` term keeps Sigma_rest
+ * well-conditioned when all collapsed blocks are strongly shrunk;
+ * pass 0.0 to reproduce the pre-nugget behaviour. */
 static void assemble_sigma_rest_upper(double *dst, int n, int p_rest,
                                       const double *G_rest_base,
-                                      const double *theta_rest)
+                                      const double *theta_rest,
+                                      double nugget)
 {
     for (int b = 0; b < n; b++)
         for (int a = 0; a <= b; a++)
@@ -123,6 +127,10 @@ static void assemble_sigma_rest_upper(double *dst, int n, int p_rest,
         for (int a = 0; a < n; a++)
             for (int b = a; b < n; b++)
                 dst[a + (size_t) b * n] += w * Gj[(size_t) a * n + b];
+    }
+    if (nugget > 0.0) {
+        for (int i = 0; i < n; i++)
+            dst[i + (size_t) i * n] += nugget;
     }
 }
 
@@ -200,7 +208,8 @@ double *inla_cgeneric_gmrfs_pblocks(inla_cgeneric_cmd_tp cmd,
     case INLA_CGENERIC_Q: {
         /* Stateless: allocate Sigma scratch per call. Trivially thread-safe. */
         double *Sigma = Calloc((size_t) n * n, double);
-        assemble_sigma_rest_upper(Sigma, n, p_rest, G_rest_base, theta_rest);
+        double nugget = find_double_named_default(data, "nugget", 0.0);
+        assemble_sigma_rest_upper(Sigma, n, p_rest, G_rest_base, theta_rest, nugget);
 
         int info = 0;
         dpotrf_("U", &n, Sigma, &n, &info);
@@ -257,7 +266,8 @@ double *inla_cgeneric_gmrfs_pblocks(inla_cgeneric_cmd_tp cmd,
                 - 0.5 N log(2 pi),   N = 2n.
            Stateless: fresh Sigma scratch per call. */
         double *Sigma = Calloc((size_t) n * n, double);
-        assemble_sigma_rest_upper(Sigma, n, p_rest, G_rest_base, theta_rest);
+        double nugget = find_double_named_default(data, "nugget", 0.0);
+        assemble_sigma_rest_upper(Sigma, n, p_rest, G_rest_base, theta_rest, nugget);
         int info = 0;
         dpotrf_("U", &n, Sigma, &n, &info);
         if (info != 0) {
@@ -283,17 +293,16 @@ double *inla_cgeneric_gmrfs_pblocks(inla_cgeneric_cmd_tp cmd,
         if (fixed) {
             ret[0] = 0.0;                    /* no hyperparameters -> no prior */
         } else {
-            /* prior from the catalog (priors.h), per block log-precision;
-             * defaults to the horseshoe with scale tau0. */
+            /* Delegate to the shared block-model helper (priors.h):
+             *   - plain path: sum of per-block priors from the catalog
+             *   - noise_scale: multiplies sigma_e into the horseshoe scale
+             *   - marg_tau:    60-point log-tau quadrature, tau integrated out
+             */
             int code = find_int_named(data, "prior_id");
             if (code < 0) code = GMRFS_PRIOR_HORSESHOE;
             int np = 0;
             double *pp = find_doubles_named(data, "param", &np);
-            double defp[1] = { find_double_named_default(data, "tau0", 1.0) };
-            if (!pp) { pp = defp; np = 1; }
-            double lp = 0.0;
-            for (int j = 0; j < p; j++) lp += gmrfs_log_prior_code(code, theta[j], pp, np);
-            ret[0] = lp;
+            ret[0] = gmrfs_log_prior_blocks(data, theta, p, code, pp, np);
         }
         break;
     }

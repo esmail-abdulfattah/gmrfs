@@ -15,6 +15,7 @@
  */
 
 #include <math.h>
+#include <stdio.h>
 #include <string.h>
 #include <strings.h>
 
@@ -154,6 +155,122 @@ static inline double gmrfs_log_prior(const char *name, double theta,
 	if (!strcasecmp(name, "flat"))
 		return gmrfs_prior_flat(theta);
 	return NAN;
+}
+
+/* ---- shared block-model log prior --------------------------------------- */
+
+/* Block-model log-prior helper shared by cblocks, pblocks, sblocks.
+ *
+ * Handles three orthogonal extensions on top of a per-block horseshoe:
+ *   * noise_scale: read the Gaussian family's log-precision (appended
+ *     to `theta` beyond the block's own p entries, as INLA does when
+ *     data->theta_all_names lists it) and multiply
+ *     sigma_e = exp(-theta_gauss/2) into the horseshoe scale, so
+ *     sigma_j ~ C+(0, tau0 * sigma_e).
+ *   * marg_tau: integrate the global scale tau out of the prior via a
+ *     60-point log-tau quadrature with a half-Cauchy(0,1) hyperprior.
+ *     tau never surfaces as an INLA hyperparameter.
+ *   * plain (both above off): reproduce the pre-existing behaviour of
+ *     the block models, i.e. gmrfs_log_prior_code with (tau0, ...) or
+ *     the user-supplied param.
+ *
+ * Params:
+ *   data          -- cgeneric data pointer (used to read `tau0`,
+ *                    `noise_scale`, `marg_tau`).
+ *   theta         -- theta vector from INLA. Entries 0..p-1 are the
+ *                    block's own log-precisions. When noise_scale is
+ *                    on, entries p..(p + data->theta_all_n - 1) carry
+ *                    the "other" hyperparameters INLA is tracking,
+ *                    in the order given by data->theta_all_names.
+ *   p             -- number of blocks (length of the block's own
+ *                    theta prefix).
+ *   prior_code    -- prior id from the priors.h catalog. Used only in
+ *                    the plain path (marg_tau = 0, noise_scale = 0).
+ *   prior_params  -- user prior parameters; if NULL, defaults to (tau0).
+ *                    Used only in the plain path.
+ *   prior_nparams -- length of prior_params (if not NULL).
+ *
+ * Returns log p(theta_1..p [| sigma_e]).
+ */
+static inline double gmrfs_log_prior_blocks(inla_cgeneric_data_tp *data,
+					    const double *theta, int p,
+					    int prior_code,
+					    const double *prior_params,
+					    int prior_nparams)
+{
+	/* ---- read options --------------------------------------------- */
+	double tau0 = 1.0;
+	int noise_scale = 0, marg_tau = 0;
+	for (int k = 0; k < data->n_doubles; k++) {
+		if (!strcasecmp(data->doubles[k]->name, "tau0")) {
+			tau0 = data->doubles[k]->doubles[0];
+		}
+	}
+	for (int k = 0; k < data->n_ints; k++) {
+		if (!strcasecmp(data->ints[k]->name, "noise_scale"))
+			noise_scale = data->ints[k]->ints[0];
+		else if (!strcasecmp(data->ints[k]->name, "marg_tau"))
+			marg_tau = data->ints[k]->ints[0];
+	}
+
+	/* ---- read sigma_e from theta[p + i] (only if noise_scale) ----- */
+	double sigma_e = 1.0;
+	if (noise_scale && theta && data->theta_all_names) {
+		for (int i = 0; i < data->theta_all_n; i++) {
+			if (data->theta_all_names[i] &&
+			    strstr(data->theta_all_names[i], "Gaussian")) {
+				sigma_e = exp(-0.5 * theta[p + i]);
+				break;
+			}
+		}
+	}
+
+	/* ---- marg_tau path: 60-point log-tau quadrature --------------- */
+	if (marg_tau) {
+		const int K = 60;
+		const double g_lo = -4.0, g_hi = 4.0;
+		double dg = (g_hi - g_lo) / (double) (K - 1);
+		double t[60];
+		double mx = -1e300;
+		for (int k = 0; k < K; k++) {
+			double g = g_lo + k * dg;
+			double tau_k = exp(g);
+			double te = noise_scale ? tau_k * sigma_e : tau_k;
+			double Sk = 0.0;
+			for (int j = 0; j < p; j++)
+				Sk += gmrfs_prior_horseshoe(theta[j], te);
+			/* log pi(tau_k) + Jacobian + log(dg):
+			 *   log(2/pi) - log(1+tau^2)   +   g   +   log(dg) */
+			t[k] = Sk +
+			       (log(2.0 / M_PI) - log(1.0 + tau_k * tau_k)) +
+			       g +
+			       log(dg);
+			if (t[k] > mx) mx = t[k];
+		}
+		double s = 0.0;
+		for (int k = 0; k < K; k++) s += exp(t[k] - mx);
+		return mx + log(s);
+	}
+
+	/* ---- plain path: sum of per-block priors ---------------------- */
+	double tau_eff = noise_scale ? tau0 * sigma_e : tau0;
+	double def_p[1] = { tau_eff };
+	const double *pp; int np;
+	if (noise_scale) {
+		/* noise_scale + non-marg-tau forces the horseshoe form
+		 * because the tau_eff replacement only makes sense for
+		 * horseshoe. */
+		pp = def_p; np = 1;
+		prior_code = GMRFS_PRIOR_HORSESHOE;
+	} else if (prior_params) {
+		pp = prior_params; np = prior_nparams;
+	} else {
+		pp = def_p; np = 1;
+	}
+	double lp = 0.0;
+	for (int j = 0; j < p; j++)
+		lp += gmrfs_log_prior_code(prior_code, theta[j], pp, np);
+	return lp;
 }
 
 #endif

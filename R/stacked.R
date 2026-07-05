@@ -17,18 +17,44 @@
 #' @param debug logical.
 #' @return cgeneric model handle.
 #' @export
-sblocks <- function(n, p, R_list, tau0 = 1.0, prior = "horseshoe", param = NULL, fixed = NULL,
-                          shlib = NULL, prefer_inla = TRUE, debug = FALSE) {
+sblocks <- function(n, p, R_list,
+                    tau         = NULL,
+                    tau0        = 1.0,
+                    noise_scale = FALSE,
+                    prior       = "horseshoe",
+                    param       = NULL,
+                    fixed       = NULL,
+                    shlib       = NULL,
+                    prefer_inla = TRUE,
+                    debug       = FALSE) {
   if (!requireNamespace("INLA", quietly = TRUE))
     stop("INLA is required", call. = FALSE)
   n <- as.integer(n); p <- as.integer(p)
   if (!is.list(R_list) || length(R_list) != p)
     stop(sprintf("R_list must be a list of length p = %d", p), call. = FALSE)
-  if (!is.numeric(tau0) || length(tau0) != 1L || tau0 <= 0)
-    stop("tau0 must be a positive scalar", call. = FALSE)
-  pp <- gmrfs_prior_param(prior, param, tau0)
+
+  ## --- resolve the global-scale option `tau` (see cblocks() for logic) ---
+  if (is.null(tau)) tau <- tau0
+  marg_tau <- 0L
+  tau_num  <- 1.0
+  if (is.character(tau) && length(tau) == 1L && identical(tau, "marginal")) {
+    marg_tau <- 1L
+    tau_num  <- 1.0
+  } else if (is.numeric(tau) && length(tau) == 1L && is.finite(tau) && tau > 0) {
+    marg_tau <- 0L
+    tau_num  <- as.numeric(tau)
+  } else {
+    stop("`tau` must be a positive number or the string \"marginal\"",
+         call. = FALSE)
+  }
+
+  pp <- gmrfs_prior_param(prior, param, tau_num)
   fixed_flag  <- if (is.null(fixed)) 0L else 1L
   theta_fixed <- if (is.null(fixed)) 0.0 else log(as.numeric(fixed))
+
+  ## If any new feature is on, force gmrfs's own .so.
+  needs_new <- (marg_tau == 1L) || isTRUE(noise_scale)
+  if (needs_new) prefer_inla <- FALSE
 
   ## Stack the per-block precisions into one (p*n) x n dense matrix,
   ## row-major (each block j's R_j occupies rows (j-1)*n+1..j*n).
@@ -53,8 +79,10 @@ sblocks <- function(n, p, R_list, tau0 = 1.0, prior = "horseshoe", param = NULL,
     p            = p,
     R_stacked    = R_stacked,
     logdet_R_all = as.numeric(logdet_R_all),
-    tau0         = as.numeric(tau0),
-    prior_id  = gmrfs_prior_code(prior),
+    tau0         = as.numeric(tau_num),
+    noise_scale  = as.integer(isTRUE(noise_scale)),
+    marg_tau     = as.integer(marg_tau),
+    prior_id     = gmrfs_prior_code(prior),
     param        = pp,
     fixed        = fixed_flag,
     theta_fixed  = theta_fixed,

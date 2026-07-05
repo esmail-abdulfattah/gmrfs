@@ -21,9 +21,18 @@
 #'   how `theta[j]` maps back to the original `G_list` index --
 #'   `theta[j]` corresponds to `G_list[[ block_order[j] ]]`.
 #' @export
-pblocks <- function(n, p, G_list, separate = 1L, tau0 = 1.0,
-                    prior = "horseshoe", param = NULL, fixed = NULL,
-                    shlib = NULL, prefer_inla = TRUE, debug = FALSE) {
+pblocks <- function(n, p, G_list,
+                    separate    = 1L,
+                    tau         = NULL,
+                    tau0        = 1.0,
+                    noise_scale = FALSE,
+                    nugget      = 0.0,
+                    prior       = "horseshoe",
+                    param       = NULL,
+                    fixed       = NULL,
+                    shlib       = NULL,
+                    prefer_inla = TRUE,
+                    debug       = FALSE) {
   if (!requireNamespace("INLA", quietly = TRUE))
     stop("INLA is required", call. = FALSE)
   if (!requireNamespace("Matrix", quietly = TRUE))
@@ -34,11 +43,31 @@ pblocks <- function(n, p, G_list, separate = 1L, tau0 = 1.0,
     stop(sprintf("`separate` must be an integer in 1..%d", p), call. = FALSE)
   if (!is.list(G_list) || length(G_list) != p)
     stop(sprintf("G_list must be a list of length p = %d", p), call. = FALSE)
-  if (!is.numeric(tau0) || length(tau0) != 1L || tau0 <= 0)
-    stop("tau0 must be a positive scalar", call. = FALSE)
-  pp <- gmrfs_prior_param(prior, param, tau0)
+
+  ## --- resolve the global-scale option `tau` (see cblocks() for logic) ---
+  if (is.null(tau)) tau <- tau0
+  marg_tau <- 0L
+  tau_num  <- 1.0
+  if (is.character(tau) && length(tau) == 1L && identical(tau, "marginal")) {
+    marg_tau <- 1L
+    tau_num  <- 1.0
+    if (nugget <= 0.0) nugget <- 1e-4
+  } else if (is.numeric(tau) && length(tau) == 1L && is.finite(tau) && tau > 0) {
+    marg_tau <- 0L
+    tau_num  <- as.numeric(tau)
+  } else {
+    stop("`tau` must be a positive number or the string \"marginal\"",
+         call. = FALSE)
+  }
+
+  pp <- gmrfs_prior_param(prior, param, tau_num)
   fixed_flag  <- if (is.null(fixed)) 0L else 1L
   theta_fixed <- if (is.null(fixed)) 0.0 else log(as.numeric(fixed))
+
+  ## If any new feature is on, force gmrfs's own .so (INLA's built-in
+  ## copy of the old symbol name would ignore these options).
+  needs_new <- (marg_tau == 1L) || isTRUE(noise_scale) || (nugget > 0.0)
+  if (needs_new) prefer_inla <- FALSE
 
   ## Reorder so the chosen block goes first; remember the mapping.
   block_order <- c(separate, setdiff(seq_len(p), separate))
@@ -70,19 +99,22 @@ pblocks <- function(n, p, G_list, separate = 1L, tau0 = 1.0,
   R1@i <- R1@i[ord];  R1@j <- R1@j[ord];  R1@x <- R1@x[ord]
 
   cm <- INLA::inla.cgeneric.define(
-    model     = "inla_cgeneric_gmrfs_pblocks",
-    shlib     = gmrfs_resolve_shlib("pblocks", shlib, prefer_inla),
-    n         = 2L * n,
-    p         = p,
-    G         = G,
-    R1        = R1,
-    R1_logdet = as.numeric(R1_logdet),
-    tau0      = as.numeric(tau0),
-    prior_id  = gmrfs_prior_code(prior),
-    param     = pp,
-    fixed     = fixed_flag,
+    model       = "inla_cgeneric_gmrfs_pblocks",
+    shlib       = gmrfs_resolve_shlib("pblocks", shlib, prefer_inla),
+    n           = 2L * n,
+    p           = p,
+    G           = G,
+    R1          = R1,
+    R1_logdet   = as.numeric(R1_logdet),
+    tau0        = as.numeric(tau_num),
+    noise_scale = as.integer(isTRUE(noise_scale)),
+    marg_tau    = as.integer(marg_tau),
+    nugget      = as.numeric(nugget),
+    prior_id    = gmrfs_prior_code(prior),
+    param       = pp,
+    fixed       = fixed_flag,
     theta_fixed = theta_fixed,
-    debug     = isTRUE(debug)
+    debug       = isTRUE(debug)
   )
   attr(cm, "block_order") <- block_order
   cm

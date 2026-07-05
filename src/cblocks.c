@@ -5,6 +5,7 @@
 
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -81,11 +82,14 @@ static double *gmrfs_theta_eff(int fixed, const double *theta_fixed, int lf,
     return th;
 }
 
-/* Build Sigma = sum_j exp(-theta_j) G_j into the upper triangle of dst
-   (column-major, n x n).  Only the upper is read by dpotrf("U", ...). */
+/* Build Sigma = sum_j exp(-theta_j) G_j + nugget * I into the upper
+   triangle of dst (column-major, n x n).  Only the upper is read by
+   dpotrf("U", ...).  The optional `nugget` term is a diagonal floor
+   that keeps Sigma well-conditioned when all blocks are strongly
+   shrunk; pass 0.0 to reproduce the pre-nugget behaviour. */
 static void assemble_sigma_upper(double *dst, int n, int p,
                                  const double *G_rowmajor,
-                                 const double *theta)
+                                 const double *theta, double nugget)
 {
     for (int b = 0; b < n; b++)
         for (int a = 0; a <= b; a++)
@@ -97,6 +101,10 @@ static void assemble_sigma_upper(double *dst, int n, int p,
         for (int a = 0; a < n; a++)
             for (int b = a; b < n; b++)
                 dst[a + (size_t) b * n] += w * Gj[(size_t) a * n + b];
+    }
+    if (nugget > 0.0) {
+        for (int i = 0; i < n; i++)
+            dst[i + (size_t) i * n] += nugget;
     }
 }
 
@@ -157,7 +165,8 @@ double *inla_cgeneric_gmrfs_cblocks(inla_cgeneric_cmd_tp cmd,
         /* Stateless: allocate Sigma scratch per call. Trivially thread-safe. */
         double *Sigma = Calloc((size_t) n * n, double);
         double *th = gmrfs_theta_eff(fixed, theta_fixed, lf, theta, p);
-        assemble_sigma_upper(Sigma, n, p, G->x, th);
+        double nugget = find_double_named_default(data, "nugget", 0.0);
+        assemble_sigma_upper(Sigma, n, p, G->x, th, nugget);
         free(th);
 
         int info = 0;
@@ -208,7 +217,8 @@ double *inla_cgeneric_gmrfs_cblocks(inla_cgeneric_cmd_tp cmd,
            Stateless: factor a fresh Sigma scratch every call. */
         double *Sigma = Calloc((size_t) n * n, double);
         double *th = gmrfs_theta_eff(fixed, theta_fixed, lf, theta, p);
-        assemble_sigma_upper(Sigma, n, p, G->x, th);
+        double nugget = find_double_named_default(data, "nugget", 0.0);
+        assemble_sigma_upper(Sigma, n, p, G->x, th, nugget);
         free(th);
         int info = 0;
         dpotrf_("U", &n, Sigma, &n, &info);
@@ -230,17 +240,16 @@ double *inla_cgeneric_gmrfs_cblocks(inla_cgeneric_cmd_tp cmd,
         if (fixed) {
             ret[0] = 0.0;                    /* no hyperparameters -> no prior */
         } else {
-            /* prior chosen from the catalog (priors.h), applied to each region
-             * log-precision; defaults to the horseshoe with scale tau0. */
+            /* Delegate to the shared block-model helper (priors.h):
+             *   - plain path: sum of per-block priors from the catalog
+             *   - noise_scale: multiplies sigma_e into the horseshoe scale
+             *   - marg_tau:    60-point log-tau quadrature, tau integrated out
+             * All three routes read their options from `data` directly. */
             int code = find_int_named(data, "prior_id");
             if (code < 0) code = GMRFS_PRIOR_HORSESHOE;
             int np = 0;
             double *pp = find_doubles_named(data, "param", &np);
-            double defp[1] = { find_double_named_default(data, "tau0", 1.0) };
-            if (!pp) { pp = defp; np = 1; }
-            double lp = 0.0;
-            for (int j = 0; j < p; j++) lp += gmrfs_log_prior_code(code, theta[j], pp, np);
-            ret[0] = lp;
+            ret[0] = gmrfs_log_prior_blocks(data, theta, p, code, pp, np);
         }
         break;
     }

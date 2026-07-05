@@ -198,17 +198,16 @@ double *inla_cgeneric_gmrfs_sblocks(inla_cgeneric_cmd_tp cmd,
         if (fixed) {
             ret[0] = 0.0;                    /* no hyperparameters -> no prior */
         } else {
-            /* prior from the catalog (priors.h), per block log-precision;
-             * defaults to the horseshoe with scale tau0. */
+            /* Delegate to the shared block-model helper (priors.h):
+             *   - plain path: sum of per-block priors from the catalog
+             *   - noise_scale: multiplies sigma_e into the horseshoe scale
+             *   - marg_tau:    60-point log-tau quadrature, tau integrated out
+             */
             int code = find_int_named(data, "prior_id");
             if (code < 0) code = GMRFS_PRIOR_HORSESHOE;
             int np = 0;
             double *pp = find_doubles_named(data, "param", &np);
-            double defp[1] = { find_double_named_default(data, "tau0", 1.0) };
-            if (!pp) { pp = defp; np = 1; }
-            double lp = 0.0;
-            for (int j = 0; j < p; j++) lp += gmrfs_log_prior_code(code, theta[j], pp, np);
-            ret[0] = lp;
+            ret[0] = gmrfs_log_prior_blocks(data, theta, p, code, pp, np);
         }
         break;
     }
