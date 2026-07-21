@@ -8,7 +8,13 @@ cblocks(
   n,
   p,
   G_list,
+  tau = NULL,
   tau0 = 1,
+  noise_scale = FALSE,
+  nugget = 0,
+  prior = "horseshoe",
+  param = NULL,
+  fixed = NULL,
   shlib = NULL,
   prefer_inla = TRUE,
   debug = FALSE
@@ -21,21 +27,48 @@ cblocks(
 
 \item{G_list}{a length-`p` list of `n x n` per-block covariance matrices.}
 
-\item{tau0}{horseshoe-style global scale on the standard-deviation scale of
-each block (default 1). Larger tau0 -> looser prior on sigma_j; smaller
-tau0 -> more aggressive shrinkage. The C-side prior reads tau0 from
-`data->doubles` and falls back to 1 when not set.}
+\item{tau}{global scale of the horseshoe. Either a positive number to fix
+`tau` at that constant, or the string `"marginal"` to integrate `tau`
+out of the prior via a 60-point log-tau quadrature (recommended when
+you want a data-driven global scale). Defaults to `tau0` if `tau0` is
+supplied and `tau` is not, otherwise `1.0`.}
 
-\item{shlib}{optional path to a specific `.so`/`.dll`. When supplied it
-overrides the resolution chain (local dir, INLA, package).}
+\item{tau0}{back-compat alias for `tau` when `tau` is not supplied.
+Older gmrfs code that passed `tau0 = X` continues to work.}
+
+\item{noise_scale}{logical. If TRUE, read the Gaussian family's noise
+precision from INLA at each call and multiply the resulting
+`sigma_e` into the horseshoe global scale, so the prior becomes
+`sigma_j ~ C+(0, tau * sigma_e)` (matches the sigma^2-scaled
+horseshoe). Requires an INLA that populates `data->theta_all_*`.
+Ignored if the Gaussian family precision is fixed.  Default FALSE.}
+
+\item{nugget}{diagonal floor added to `Sigma(theta)` before the
+Cholesky, for numerical stability when all blocks are strongly
+shrunk. Default `0` for backward compatibility; auto-bumped to
+`1e-4` if `tau = "marginal"` (marg-tau visits arbitrarily small
+tau on the quadrature grid, where a nugget is essential).}
+
+\item{prior}{prior name (default `"horseshoe"`). Only used when
+`tau` is a number and `noise_scale` is FALSE (the "plain" path).
+`noise_scale = TRUE` or `tau = "marginal"` forces the horseshoe.}
+
+\item{param}{optional prior parameters; if NULL, defaults to the
+scale set by `tau`.}
+
+\item{fixed}{optional vector of length 1 or `p` of fixed block
+precisions (on the original, non-log scale). When supplied, the
+block log-precisions are held at those values and no
+hyperparameters are estimated.}
+
+\item{shlib}{optional path to a specific `.so`/`.dll`.}
 
 \item{prefer_inla}{if TRUE, prefer INLA's precompiled library when shipped.}
 
 \item{debug}{logical.}
 }
 \value{
-cgeneric model handle.  After fitting, `theta[j]` corresponds to
-  `G_list[[j]]` (no reordering).
+cgeneric model handle.
 }
 \description{
 Latent dimension stays at `n` regardless of `p`: INLA sees a single

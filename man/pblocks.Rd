@@ -9,7 +9,13 @@ pblocks(
   p,
   G_list,
   separate = 1L,
+  tau = NULL,
   tau0 = 1,
+  noise_scale = FALSE,
+  nugget = 0,
+  prior = "horseshoe",
+  param = NULL,
+  fixed = NULL,
   shlib = NULL,
   prefer_inla = TRUE,
   debug = FALSE

@@ -2,7 +2,6 @@
 % Please edit documentation in R/omp.R
 \name{omp_select}
 \alias{omp_select}
-\alias{print.omp_select}
 \title{Select candidate regions by Orthogonal Matching Pursuit (OMP)}
 \usage{
 omp_select(
@@ -12,64 +11,72 @@ omp_select(
   max_select = NULL,
   standardize = TRUE,
   stop_rule = c("noise", "fixed"),
-  noise_mult = 2.5,
+  noise_mult = 1.5,
+  union_marginal = TRUE,
   V_list = NULL,
   verbose = FALSE
 )
-
-\method{print}{omp_select}(x, ...)
 }
 \arguments{
-\item{y}{numeric response vector of length \code{n}.}
+\item{y}{numeric response vector of length `n`.}
 
-\item{G_list}{length-\code{p} list of \code{n x n} per-region covariance (GRM)
-matrices. Ignored when \code{V_list} is supplied.}
+\item{G_list}{length-`p` list of `n x n` per-region covariance (GRM)
+matrices. Ignored when `V_list` is supplied.}
 
-\item{K}{how many leading eigenvectors to keep per region. "mp" (default)
+\item{K}{how many leading eigenvectors to keep per region. `"mp"` (default)
 chooses each region's count adaptively from a Marchenko-Pastur eigenvalue
-threshold; a fraction in (0,1) keeps the top directions explaining that share
-of the region's variance; a positive integer fixes the count. Capped per
-region at its number of positive eigenvalues.}
+threshold (keep eigenvalues above `median(ev) * (1 + sqrt(r/n))^2`); a
+fraction in `(0,1)` keeps the top directions explaining that share of the
+region's variance; a positive integer fixes the count. Capped per region
+at its number of positive eigenvalues.}
 
-\item{max_select}{optional hard cap on how many regions to select. NULL
-(default) means no artificial cap: selection is driven by the noise-floor stop,
-so it adapts to however many regions carry signal. Set an integer only to bound
-the refit budget (or with stop_rule = "fixed", where it sets the count).}
+\item{max_select}{optional hard cap on how many regions to select. `NULL`
+(default) means no artificial cap: selection is driven entirely by the
+noise-floor stop (`stop_rule = "noise"`), so it adapts to however many
+regions actually carry signal. Set an integer only to bound the refit
+budget (or when using `stop_rule = "fixed"`, where it sets the count).}
 
-\item{standardize}{if TRUE (default) centre and scale \code{y} to unit variance
+\item{standardize}{if TRUE (default) centre and scale `y` to unit variance
 before selection. Recommended: it makes the noise-floor stopping rule
-scale-free. Region scaling is irrelevant to OMP (it uses eigenvectors only),
-so kernels need not be standardised.}
+scale-free. (Region scaling is irrelevant to OMP, which uses eigenvectors
+only, so kernels do not need standardising.)}
 
-\item{stop_rule}{stopping rule. \code{"noise"} (default) stops early when the
-best remaining score falls to the residual noise floor; \code{"fixed"} always
-selects \code{max_select} regions.}
+\item{stop_rule}{stopping rule. `"noise"` (default) stops early when the
+best remaining score falls to the residual noise floor; `"fixed"` always
+selects `max_select` regions.}
 
-\item{noise_mult}{multiplier on the noise floor for the \code{"noise"} rule
-(default 2.5; larger = stop sooner, fewer regions selected).}
+\item{noise_mult}{multiplier on the noise floor for the `"noise"` rule
+(default 1.5, recall-first; larger = stop sooner, fewer regions selected).}
 
-\item{V_list}{optional precomputed list of \code{n x K} orthonormal eigenvector
-matrices (one per region). When supplied, \code{G_list} is not needed and the
-(expensive) eigendecompositions are skipped --- useful for repeated calls on
-the same set of regions.}
+\item{union_marginal}{if TRUE (default) add, to the greedy selection, any
+region whose *marginal* score (projection onto the original response, no
+residualisation) clears the noise floor --- a safety net that recovers a
+strong region the greedy step may have "removed away" via a correlated
+neighbour. Capped so the candidate set does not balloon; the refit shrinks
+the harmless extras.}
+
+\item{V_list}{optional precomputed list of `n x K` orthonormal eigenvector
+matrices (one per region). When supplied, `G_list` is not needed and the
+(expensive) eigendecompositions are skipped --- useful for repeated calls
+on the same set of regions (e.g. many phenotypes / replicates).}
 
 \item{verbose}{logical; if TRUE, report each pick.}
-
-\item{x}{an \code{omp_select} object.}
-
-\item{...}{ignored.}
 }
 \value{
-An object of class \code{"omp_select"}: a list with \code{selected} (region
-indices in selection order, best first), \code{scores} (score at each pick),
-\code{n_selected}, \code{residual_var} (\code{||r||^2 / n} after each pick), and
-\code{V_list} (the per-region eigenvectors, reusable via the \code{V_list}
-argument).
+An object of class `"omp_select"`: a list with
+  \describe{
+    \item{selected}{region indices in selection order (best first).}
+    \item{scores}{the score at the moment each region was selected.}
+    \item{n_selected}{number of regions selected.}
+    \item{residual_var}{`||r||^2 / n` after each pick (the shrinking residual).}
+    \item{V_list}{the per-region eigenvectors, so a later call can reuse them
+      via the `V_list` argument.}
+  }
 }
 \description{
 Greedy, INLA-free selection of the regions most likely to carry signal,
-intended as the cheap first stage before an exact \code{\link{cblocks}} /
-\code{\link{pblocks}} refit on just the selected regions.
+intended as the cheap first stage before an exact [cblocks()] / [pblocks()]
+refit on just the selected regions.
 }
 \details{
 At each step OMP scores every not-yet-selected region by how much of the
@@ -77,8 +84,8 @@ current residual lies in its leading eigenspace, selects the best region,
 \emph{removes} that region's contribution from the residual, and repeats.
 Removing each selected region before scoring the rest deconfounds correlated
 regions: a region masked by a stronger, correlated neighbour resurfaces once
-that neighbour has been taken out. This typically gives much better recall than
-a single one-shot ranking, at a fraction of the cost (no model fit).
+that neighbour has been taken out. This typically gives much better recall
+than a single one-shot ranking, at a fraction of the cost (no model fit).
 }
 \examples{
 \dontrun{
@@ -96,6 +103,5 @@ v <- exp(-fit$summary.hyperpar$mode[-1]) * var(y)
 }
 }
 \seealso{
-\code{\link{cblocks}}, \code{\link{pblocks}} for the exact refit on the
-selected regions.
+[cblocks()], [pblocks()] for the exact refit on the selected regions.
 }

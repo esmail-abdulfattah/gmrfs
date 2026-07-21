@@ -34,7 +34,13 @@
 #'   best remaining score falls to the residual noise floor; `"fixed"` always
 #'   selects `max_select` regions.
 #' @param noise_mult multiplier on the noise floor for the `"noise"` rule
-#'   (default 2.5; larger = stop sooner, fewer regions selected).
+#'   (default 1.5, recall-first; larger = stop sooner, fewer regions selected).
+#' @param union_marginal if TRUE (default) add, to the greedy selection, any
+#'   region whose *marginal* score (projection onto the original response, no
+#'   residualisation) clears the noise floor --- a safety net that recovers a
+#'   strong region the greedy step may have "removed away" via a correlated
+#'   neighbour. Capped so the candidate set does not balloon; the refit shrinks
+#'   the harmless extras.
 #' @param V_list optional precomputed list of `n x K` orthonormal eigenvector
 #'   matrices (one per region). When supplied, `G_list` is not needed and the
 #'   (expensive) eigendecompositions are skipped --- useful for repeated calls
@@ -67,7 +73,8 @@
 #' @export
 omp_select <- function(y, G_list = NULL, K = "mp", max_select = NULL,
                        standardize = TRUE, stop_rule = c("noise", "fixed"),
-                       noise_mult = 2.5, V_list = NULL, verbose = FALSE) {
+                       noise_mult = 1.5, union_marginal = TRUE,
+                       V_list = NULL, verbose = FALSE) {
   stop_rule <- match.arg(stop_rule)
   if (is.null(max_select) && stop_rule == "fixed")
     stop('`stop_rule = "fixed"` requires an explicit `max_select`', call. = FALSE)
@@ -123,6 +130,29 @@ omp_select <- function(y, G_list = NULL, K = "mp", max_select = NULL,
     if (verbose)
       message(sprintf("step %2d: region %d  (score %.4g, residual var %.4g)",
                       step, best, best_sc, sum(r^2) / n))
+  }
+
+  ## --- union with marginal ranking (recall safety net) ---
+  ## The greedy loop can "remove away" a strong region that is correlated with a
+  ## selected neighbour. But such a region keeps a high MARGINAL score (projection
+  ## onto the ORIGINAL response, no residualisation), so it cannot be hidden. We
+  ## add any region whose marginal score clears the noise floor, capped so the
+  ## candidate set does not balloon (the cblocks refit shrinks the harmless extras).
+  if (isTRUE(union_marginal)) {
+    marg <- vapply(seq_len(p), function(j) {
+      Vj <- V_list[[j]]; sum(crossprod(Vj, y)^2) / ncol(Vj)
+    }, numeric(1))
+    floor0 <- noise_mult * sum(y^2) / n
+    extra  <- setdiff(which(marg > floor0), selected)
+    extra  <- extra[order(marg[extra], decreasing = TRUE)]
+    n_omp  <- length(selected)
+    cap    <- min(max_select, n_omp + max(5L, n_omp))     # soft cap: don't balloon
+    room   <- cap - n_omp
+    if (room > 0 && length(extra) > 0) {
+      add      <- extra[seq_len(min(room, length(extra)))]
+      selected <- c(selected, add)
+      scores   <- c(scores, marg[add])
+    }
   }
 
   structure(list(selected = selected, scores = scores,

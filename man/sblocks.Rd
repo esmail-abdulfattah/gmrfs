@@ -8,7 +8,12 @@ sblocks(
   n,
   p,
   R_list,
+  tau = NULL,
   tau0 = 1,
+  noise_scale = FALSE,
+  prior = "horseshoe",
+  param = NULL,
+  fixed = NULL,
   shlib = NULL,
   prefer_inla = TRUE,
   debug = FALSE
