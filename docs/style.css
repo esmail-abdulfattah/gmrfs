@@ -329,6 +329,8 @@ p:last-child { margin-bottom: 0; }
   box-shadow: var(--shadow);
 }
 
+.paper-card + .paper-card { margin-top: 1.4rem; }
+
 .paper-meta {
   font-size: 0.75rem;
   font-weight: 600;
