@@ -23,55 +23,72 @@ cblocks(
 \arguments{
 \item{n}{block size (= number of individuals; latent dim).}
 
-\item{p}{number of blocks (= length of `G_list`).}
+\item{p}{number of blocks (= length of \code{G_list}).}
 
-\item{G_list}{a length-`p` list of `n x n` per-block covariance matrices.}
+\item{G_list}{a length-\code{p} list of \verb{n x n} per-block covariance matrices.}
 
 \item{tau}{global scale of the horseshoe. Either a positive number to fix
-`tau` at that constant, or the string `"marginal"` to integrate `tau`
+\code{tau} at that constant, or the string \code{"marginal"} to integrate \code{tau}
 out of the prior via a 60-point log-tau quadrature (recommended when
-you want a data-driven global scale). Defaults to `tau0` if `tau0` is
-supplied and `tau` is not, otherwise `1.0`.}
+you want a data-driven global scale). Defaults to \code{tau0} if \code{tau0} is
+supplied and \code{tau} is not, otherwise \code{1.0}.}
 
-\item{tau0}{back-compat alias for `tau` when `tau` is not supplied.
-Older gmrfs code that passed `tau0 = X` continues to work.}
+\item{tau0}{back-compat alias for \code{tau} when \code{tau} is not supplied.
+Older gmrfs code that passed \code{tau0 = X} continues to work.}
 
 \item{noise_scale}{logical. If TRUE, read the Gaussian family's noise
 precision from INLA at each call and multiply the resulting
-`sigma_e` into the horseshoe global scale, so the prior becomes
-`sigma_j ~ C+(0, tau * sigma_e)` (matches the sigma^2-scaled
-horseshoe). Requires an INLA that populates `data->theta_all_*`.
+\code{sigma_e} into the horseshoe global scale, so the prior becomes
+\verb{sigma_j ~ C+(0, tau * sigma_e)} (matches the sigma^2-scaled
+horseshoe). Requires an INLA that populates \verb{data->theta_all_*}.
 Ignored if the Gaussian family precision is fixed.  Default FALSE.}
 
-\item{nugget}{diagonal floor added to `Sigma(theta)` before the
+\item{nugget}{diagonal floor added to \code{Sigma(theta)} before the
 Cholesky, for numerical stability when all blocks are strongly
-shrunk. Default `0` for backward compatibility; auto-bumped to
-`1e-4` if `tau = "marginal"` (marg-tau visits arbitrarily small
+shrunk. Default \code{0} for backward compatibility; auto-bumped to
+\code{1e-4} if \code{tau = "marginal"} (marg-tau visits arbitrarily small
 tau on the quadrature grid, where a nugget is essential).}
 
-\item{prior}{prior name (default `"horseshoe"`). Only used when
-`tau` is a number and `noise_scale` is FALSE (the "plain" path).
-`noise_scale = TRUE` or `tau = "marginal"` forces the horseshoe.}
+\item{prior}{prior name (default \code{"horseshoe"}). Only used when
+\code{tau} is a number and \code{noise_scale} is FALSE (the "plain" path).
+\code{noise_scale = TRUE} or \code{tau = "marginal"} forces the horseshoe.}
 
 \item{param}{optional prior parameters; if NULL, defaults to the
-scale set by `tau`.}
+scale set by \code{tau}.}
 
-\item{fixed}{optional vector of length 1 or `p` of fixed block
+\item{fixed}{optional vector of length 1 or \code{p} of fixed block
 precisions (on the original, non-log scale). When supplied, the
 block log-precisions are held at those values and no
 hyperparameters are estimated.}
 
-\item{shlib}{optional path to a specific `.so`/`.dll`.}
+\item{shlib}{optional path to a specific \code{.so}/\code{.dll}.}
 
 \item{prefer_inla}{if TRUE, prefer INLA's precompiled library when shipped.}
 
 \item{debug}{logical.}
 }
 \value{
-cgeneric model handle.
+A model handle (class \code{inla.cgeneric}), for use as
+\code{f(idx, model = .)} in INLA or with \code{\link[=gmrf_Q]{gmrf_Q()}} and the other
+functions in \link{gmrf_eval}.
 }
 \description{
-Latent dimension stays at `n` regardless of `p`: INLA sees a single
-`f(idx, model = cm)` instead of a stacked p-fold chain. The covariance
-is `Sigma(theta) = sum_j exp(-theta_j) G_j`.
+Latent dimension stays at \code{n} regardless of \code{p}: INLA sees a single
+\code{f(idx, model = cm)} instead of a stacked p-fold chain. The covariance
+is \verb{Sigma(theta) = sum_j exp(-theta_j) G_j}.
+}
+\examples{
+ar1_cov <- function(n, rho) rho^abs(outer(seq_len(n), seq_len(n), "-"))
+G_list <- list(ar1_cov(10, 0.5), ar1_cov(10, 0.2))
+cm <- cblocks(n = 10, p = 2, G_list = G_list)
+gmrf_Q(cm, theta = c(0, 1))
+
+\dontshow{if (requireNamespace("INLA", quietly = TRUE)) withAutoprint(\{ # examplesIf}
+\donttest{
+fit <- INLA::inla(y ~ 1 + f(idx, model = cm),
+                  data = list(y = rnorm(10), idx = 1:10),
+                  control.inla = list(int.strategy = "eb"))
+fit$summary.hyperpar
+}
+\dontshow{\}) # examplesIf}
 }

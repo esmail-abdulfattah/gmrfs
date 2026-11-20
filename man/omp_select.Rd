@@ -18,64 +18,64 @@ omp_select(
 )
 }
 \arguments{
-\item{y}{numeric response vector of length `n`.}
+\item{y}{numeric response vector of length \code{n}.}
 
-\item{G_list}{length-`p` list of `n x n` per-region covariance (GRM)
-matrices. Ignored when `V_list` is supplied.}
+\item{G_list}{length-\code{p} list of \verb{n x n} per-region covariance (GRM)
+matrices. Ignored when \code{V_list} is supplied.}
 
-\item{K}{how many leading eigenvectors to keep per region. `"mp"` (default)
+\item{K}{how many leading eigenvectors to keep per region. \code{"mp"} (default)
 chooses each region's count adaptively from a Marchenko-Pastur eigenvalue
-threshold (keep eigenvalues above `median(ev) * (1 + sqrt(r/n))^2`); a
-fraction in `(0,1)` keeps the top directions explaining that share of the
+threshold (keep eigenvalues above \code{median(ev) * (1 + sqrt(r/n))^2}); a
+fraction in \verb{(0,1)} keeps the top directions explaining that share of the
 region's variance; a positive integer fixes the count. Capped per region
 at its number of positive eigenvalues.}
 
-\item{max_select}{optional hard cap on how many regions to select. `NULL`
+\item{max_select}{optional hard cap on how many regions to select. \code{NULL}
 (default) means no artificial cap: selection is driven entirely by the
-noise-floor stop (`stop_rule = "noise"`), so it adapts to however many
+noise-floor stop (\code{stop_rule = "noise"}), so it adapts to however many
 regions actually carry signal. Set an integer only to bound the refit
-budget (or when using `stop_rule = "fixed"`, where it sets the count).}
+budget (or when using \code{stop_rule = "fixed"}, where it sets the count).}
 
-\item{standardize}{if TRUE (default) centre and scale `y` to unit variance
+\item{standardize}{if TRUE (default) centre and scale \code{y} to unit variance
 before selection. Recommended: it makes the noise-floor stopping rule
 scale-free. (Region scaling is irrelevant to OMP, which uses eigenvectors
 only, so kernels do not need standardising.)}
 
-\item{stop_rule}{stopping rule. `"noise"` (default) stops early when the
-best remaining score falls to the residual noise floor; `"fixed"` always
-selects `max_select` regions.}
+\item{stop_rule}{stopping rule. \code{"noise"} (default) stops early when the
+best remaining score falls to the residual noise floor; \code{"fixed"} always
+selects \code{max_select} regions.}
 
-\item{noise_mult}{multiplier on the noise floor for the `"noise"` rule
+\item{noise_mult}{multiplier on the noise floor for the \code{"noise"} rule
 (default 1.5, recall-first; larger = stop sooner, fewer regions selected).}
 
 \item{union_marginal}{if TRUE (default) add, to the greedy selection, any
-region whose *marginal* score (projection onto the original response, no
+region whose \emph{marginal} score (projection onto the original response, no
 residualisation) clears the noise floor --- a safety net that recovers a
 strong region the greedy step may have "removed away" via a correlated
 neighbour. Capped so the candidate set does not balloon; the refit shrinks
 the harmless extras.}
 
-\item{V_list}{optional precomputed list of `n x K` orthonormal eigenvector
-matrices (one per region). When supplied, `G_list` is not needed and the
+\item{V_list}{optional precomputed list of \verb{n x K} orthonormal eigenvector
+matrices (one per region). When supplied, \code{G_list} is not needed and the
 (expensive) eigendecompositions are skipped --- useful for repeated calls
 on the same set of regions (e.g. many phenotypes / replicates).}
 
 \item{verbose}{logical; if TRUE, report each pick.}
 }
 \value{
-An object of class `"omp_select"`: a list with
-  \describe{
-    \item{selected}{region indices in selection order (best first).}
-    \item{scores}{the score at the moment each region was selected.}
-    \item{n_selected}{number of regions selected.}
-    \item{residual_var}{`||r||^2 / n` after each pick (the shrinking residual).}
-    \item{V_list}{the per-region eigenvectors, so a later call can reuse them
-      via the `V_list` argument.}
-  }
+An object of class \code{"omp_select"}: a list with
+\describe{
+\item{selected}{region indices in selection order (best first).}
+\item{scores}{the score at the moment each region was selected.}
+\item{n_selected}{number of regions selected.}
+\item{residual_var}{\verb{||r||^2 / n} after each pick (the shrinking residual).}
+\item{V_list}{the per-region eigenvectors, so a later call can reuse them
+via the \code{V_list} argument.}
+}
 }
 \description{
 Greedy, INLA-free selection of the regions most likely to carry signal,
-intended as the cheap first stage before an exact [cblocks()] / [pblocks()]
+intended as the cheap first stage before an exact \code{\link[=cblocks]{cblocks()}} / \code{\link[=pblocks]{pblocks()}}
 refit on just the selected regions.
 }
 \details{
@@ -88,20 +88,31 @@ that neighbour has been taken out. This typically gives much better recall
 than a single one-shot ranking, at a fraction of the cost (no model fit).
 }
 \examples{
-\dontrun{
+## 8 low-rank regions, only region 3 carries signal
+set.seed(1)
+n <- 100
+Z <- lapply(1:8, function(j) matrix(rnorm(n * 5), n, 5))
+G_list <- lapply(Z, tcrossprod)
+y <- Z[[3]] \%*\% rnorm(5) + rnorm(n, sd = 0.5)
+
 ## Stage 1: cheap OMP selection
 sel <- omp_select(y, G_list, max_select = 10)
+sel
 k   <- sel$selected                      # candidate regions, best first
 
 ## Stage 2: exact refit with cblocks on just those regions
-cm  <- cblocks(length(y), length(k), G_list[k], prior = "horseshoe")
+Gk  <- lapply(G_list[k], function(G) G + 1e-6 * diag(n))
+cm  <- cblocks(length(y), length(k), Gk, prior = "horseshoe")
+\dontshow{if (requireNamespace("INLA", quietly = TRUE)) withAutoprint(\{ # examplesIf}
+\donttest{
 fit <- INLA::inla(y ~ 1 + f(idx, model = cm),
-                  data = data.frame(y = y, idx = seq_along(y)),
+                  data = data.frame(y = as.numeric(y), idx = seq_along(y)),
                   family = "gaussian")
 ## per-region variance estimates (back on the y scale):
 v <- exp(-fit$summary.hyperpar$mode[-1]) * var(y)
 }
+\dontshow{\}) # examplesIf}
 }
 \seealso{
-[cblocks()], [pblocks()] for the exact refit on the selected regions.
+\code{\link[=cblocks]{cblocks()}}, \code{\link[=pblocks]{pblocks()}} for the exact refit on the selected regions.
 }

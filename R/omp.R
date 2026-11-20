@@ -57,15 +57,25 @@
 #'   }
 #' @seealso [cblocks()], [pblocks()] for the exact refit on the selected regions.
 #' @examples
-#' \dontrun{
+#' ## 8 low-rank regions, only region 3 carries signal
+#' set.seed(1)
+#' n <- 100
+#' Z <- lapply(1:8, function(j) matrix(rnorm(n * 5), n, 5))
+#' G_list <- lapply(Z, tcrossprod)
+#' y <- Z[[3]] %*% rnorm(5) + rnorm(n, sd = 0.5)
+#'
 #' ## Stage 1: cheap OMP selection
 #' sel <- omp_select(y, G_list, max_select = 10)
+#' sel
 #' k   <- sel$selected                      # candidate regions, best first
 #'
 #' ## Stage 2: exact refit with cblocks on just those regions
-#' cm  <- cblocks(length(y), length(k), G_list[k], prior = "horseshoe")
+#' Gk  <- lapply(G_list[k], function(G) G + 1e-6 * diag(n))
+#' cm  <- cblocks(length(y), length(k), Gk, prior = "horseshoe")
+#' @examplesIf requireNamespace("INLA", quietly = TRUE)
+#' \donttest{
 #' fit <- INLA::inla(y ~ 1 + f(idx, model = cm),
-#'                   data = data.frame(y = y, idx = seq_along(y)),
+#'                   data = data.frame(y = as.numeric(y), idx = seq_along(y)),
 #'                   family = "gaussian")
 #' ## per-region variance estimates (back on the y scale):
 #' v <- exp(-fit$summary.hyperpar$mode[-1]) * var(y)

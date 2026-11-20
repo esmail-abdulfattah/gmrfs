@@ -1,3 +1,7 @@
+/*
+ * Copied from R-INLA (include/cgeneric.h), MIT licence, Copyright (c) r-inla;
+ * see inst/COPYRIGHTS. Changed: omp.h is included only with OpenMP.
+ */
 #ifndef __INLA_CGENERIC_H__
 #       define __INLA_CGENERIC_H__
 
@@ -13,7 +17,9 @@
 
 //
 
-#       include <omp.h>
+#       if defined(_OPENMP)
+#              include <omp.h>
+#       endif
 
 __BEGIN_DECLS
 #       include <assert.h>

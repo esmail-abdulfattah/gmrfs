@@ -1,14 +1,47 @@
 # gmrfs
 
-Adaptive GMRF models for [R-INLA](https://www.r-inla.org/) via the `cgeneric`
-interface. Bundles four latent models:
+Adaptive Gaussian Markov random field models. Each model can be evaluated
+directly from R (precision matrix, mean, hyperparameter prior, normalising
+constant) for use in your own code, or used as a latent component in
+[R-INLA](https://www.r-inla.org/) via the `cgeneric` interface. Bundles five
+latent models:
 
-| wrapper     | C entry point            |
-|-------------|--------------------------|
-| `fbesag()`  | `inla_cgeneric_fbesag`   |
-| `cblocks()` | `inla_cgeneric_cblocks`  |
-| `pblocks()` | `inla_cgeneric_pblocks`  |
-| `sblocks()` | `inla_cgeneric_sblocks`  |
+| wrapper     | C entry point                 |
+|-------------|-------------------------------|
+| `fbesag()`  | `inla_cgeneric_gmrfs_fbesag`  |
+| `fbym2()`   | `inla_cgeneric_gmrfs_fbym2`   |
+| `cblocks()` | `inla_cgeneric_gmrfs_cblocks` |
+| `pblocks()` | `inla_cgeneric_gmrfs_pblocks` |
+| `sblocks()` | `inla_cgeneric_gmrfs_sblocks` |
+
+## Use without INLA
+
+```r
+library(gmrfs)
+cm <- cblocks(n = n, p = p, G_list = G_list)
+
+theta <- gmrf_initial(cm)            # hyperparameters, internal scale
+Q     <- gmrf_Q(cm, theta)           # sparse precision matrix
+gmrf_mu(cm, theta)                   # mean
+gmrf_log_prior(cm, theta)            # log prior of theta
+gmrf_log_norm_const(cm, theta)       # log normalising constant of x | theta
+
+x <- gmrf_sample(cm, theta, n = 10)  # draws of x | theta, constraints included
+gmrf_log_density(cm, x, theta)       # log p(x | theta), constraints included
+```
+
+With these, the models can be used in your own MCMC sampler or optimiser.
+`gmrf_sample()` and `gmrf_log_density()` also take `Q_add` and `b` for
+`x | theta, y` with Gaussian data: exact Gibbs steps for `x`, and the
+marginal likelihood `p(y | theta)` with `x` integrated out. See
+`demo("fbym2_mcmc", package = "gmrfs")`, which fits `fbym2` by MCMC and
+compares with INLA.
+
+None of this needs INLA: every model, including `fbesag()` and `fbym2()`,
+is built, evaluated and sampled without it. For those two the package has
+its own copies of INLA's graph reading, scaling (`inla.scale.model`, with
+the marginal variances by the same Takahashi recursions) and the prior of
+the mixing parameter. INLA is needed only to fit with `INLA::inla()`.
 
 ## Install
 
@@ -59,6 +92,7 @@ demo("fbesag",  package = "gmrfs") # 5-node partitioned Besag
 demo("cblocks", package = "gmrfs") # collapsed blocks
 demo("pblocks", package = "gmrfs") # partial blocks
 demo("sblocks", package = "gmrfs") # stacked blocks
+demo("fbym2_mcmc", package = "gmrfs") # fbym2 by MCMC vs INLA (~40 s)
 ```
 
 A green `[OK] ... ran successfully.` line at the end of each confirms the
@@ -93,4 +127,5 @@ R layer; the wrappers handle stacking and any required factorisation.
 
 ## License
 
-GPL (>= 2). Includes `src/cgeneric.h` from R-INLA.
+GPL (>= 2). Includes code from R-INLA (MIT licence); see
+[`inst/COPYRIGHTS`](inst/COPYRIGHTS).

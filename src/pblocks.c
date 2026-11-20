@@ -156,6 +156,7 @@ double *inla_cgeneric_gmrfs_pblocks(inla_cgeneric_cmd_tp cmd,
 
     int p = find_int_named(data, "p");
     assert(p >= 1);
+    if (N <= 0 || p < 1) return NULL;
     int p_rest = p - 1;                       /* may be 0 if p == 1    */
     assert(p_rest >= 0);
 

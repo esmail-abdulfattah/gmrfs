@@ -12,14 +12,20 @@
 #' @param G_list a length-`p` list of `n x n` per-block covariance matrices.
 #' @param separate integer in `1..p` -- which block to keep separate
 #'   (default 1).
-#' @param tau0 horseshoe-style global scale (default 1). See [cblocks()].
+#' @inheritParams cblocks
 #' @param shlib optional path to a specific `.so`/`.dll`. When supplied it
 #'   overrides the resolution chain (local dir, INLA, package).
 #' @param prefer_inla if TRUE, prefer INLA's precompiled library when shipped.
 #' @param debug logical.
-#' @return cgeneric model handle. The attribute `block_order` records
+#' @return A model handle, as for [cblocks()]. The attribute `block_order` records
 #'   how `theta[j]` maps back to the original `G_list` index --
 #'   `theta[j]` corresponds to `G_list[[ block_order[j] ]]`.
+#' @examples
+#' ar1_cov <- function(n, rho) rho^abs(outer(seq_len(n), seq_len(n), "-"))
+#' G_list <- list(ar1_cov(10, 0.5), ar1_cov(10, 0.2))
+#' pm <- pblocks(n = 10, p = 2, G_list = G_list, separate = 2)
+#' attr(pm, "block_order")
+#' dim(gmrf_Q(pm, theta = c(0, 1)))
 #' @export
 pblocks <- function(n, p, G_list,
                     separate    = 1L,
@@ -33,10 +39,6 @@ pblocks <- function(n, p, G_list,
                     shlib       = NULL,
                     prefer_inla = TRUE,
                     debug       = FALSE) {
-  if (!requireNamespace("INLA", quietly = TRUE))
-    stop("INLA is required", call. = FALSE)
-  if (!requireNamespace("Matrix", quietly = TRUE))
-    stop("Matrix is required", call. = FALSE)
   n <- as.integer(n); p <- as.integer(p)
   separate <- as.integer(separate)
   if (length(separate) != 1L || separate < 1L || separate > p)
@@ -91,16 +93,15 @@ pblocks <- function(n, p, G_list,
     stop("Separated block must be positive-definite", call. = FALSE)
   R1_logdet <- 2 * sum(log(diag(R1_chol)))
 
-  R1 <- INLA::inla.as.sparse(R1_dense)
+  R1 <- gmrfs_as_triplet(R1_dense)
   ## upper-tri + row-major, as the C side expects.
   keep <- R1@i <= R1@j
   R1@i <- R1@i[keep]; R1@j <- R1@j[keep]; R1@x <- R1@x[keep]
   ord  <- order(R1@i, R1@j)
   R1@i <- R1@i[ord];  R1@j <- R1@j[ord];  R1@x <- R1@x[ord]
 
-  cm <- INLA::inla.cgeneric.define(
-    model       = "inla_cgeneric_gmrfs_pblocks",
-    shlib       = gmrfs_resolve_shlib("pblocks", shlib, prefer_inla),
+  cm <- gmrfs_cgeneric_define(
+    "inla_cgeneric_gmrfs_pblocks", "pblocks",
     n           = 2L * n,
     p           = p,
     G           = G,
@@ -114,6 +115,8 @@ pblocks <- function(n, p, G_list,
     param       = pp,
     fixed       = fixed_flag,
     theta_fixed = theta_fixed,
+    shlib       = shlib,
+    prefer_inla = prefer_inla,
     debug       = isTRUE(debug)
   )
   attr(cm, "block_order") <- block_order

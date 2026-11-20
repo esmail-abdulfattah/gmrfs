@@ -11,30 +11,55 @@ fbesag(
   param = list(p1 = 1, p2 = 1e-05),
   initial = -999,
   shlib = NULL,
-  prefer_inla = TRUE
+  prefer_inla = TRUE,
+  constr = TRUE,
+  extraconstr = NULL,
+  nrep = 1L
 )
 }
 \arguments{
-\item{graph}{adjacency matrix or anything `INLA::inla.read.graph` accepts.}
+\item{graph}{adjacency matrix, structure matrix, \code{inla.graph}, spdep \code{nb}
+object or graph file (what \code{INLA::inla.read.graph()} accepts). INLA is
+not needed to build the model.}
 
 \item{id}{integer vector (length = nrow(graph)) of partition ids in 1..P.}
 
 \item{sd_gamma}{prior sd for partition effects (default 0.2).}
 
-\item{param}{list with `p1`, `p2` defining lambda = -log(p2)/p1.}
+\item{param}{list with \code{p1}, \code{p2} defining lambda = -log(p2)/p1.}
 
-\item{initial}{length-P vector of starting log-precisions, or `-999`
+\item{initial}{length-P vector of starting log-precisions, or \code{-999}
 sentinel for the default (rep(4, P)).}
 
-\item{shlib}{optional path to a specific `.so`/`.dll`. When supplied it
+\item{shlib}{optional path to a specific \code{.so}/\code{.dll}. When supplied it
 overrides the resolution chain (local dir, INLA, package).}
 
-\item{prefer_inla}{if TRUE (default) and INLA ships `libfbesag.so`, use it;
+\item{prefer_inla}{if TRUE (default) and INLA ships \code{libfbesag.so}, use it;
 otherwise fall back to this package's compiled library.}
+
+\item{constr}{if TRUE (default), add one sum-to-zero constraint per
+connected component of size >= 2 (islands are proper and get none).}
+
+\item{extraconstr}{optional \code{list(A, e)} of further constraints; appended
+to the per-component ones.}
+
+\item{nrep}{number of replicates when used with \code{f(..., replicate = )}.
+The constant that puts the mlik on besag's convention is per replicate,
+and the model cannot see \code{replicate}, so give it here (default 1).}
 }
 \value{
-cgeneric model handle for use as `f(idx, model = .)` in INLA.
+cgeneric model handle for use as \code{f(idx, model = .)} in INLA. The
+constraints and \code{rankdef} are carried in the handle, so \code{f()} picks them
+up unless overridden there.
 }
 \description{
 Partitioned Besag model (fbesag)
+}
+\examples{
+## path graph on 5 nodes, two partitions
+W <- matrix(0, 5, 5)
+W[cbind(1:4, 2:5)] <- 1
+W <- W + t(W)
+fm <- fbesag(W, id = c(1, 1, 1, 2, 2))
+gmrf_Q(fm)
 }

@@ -1,0 +1,6 @@
+^dev$
+^docs$
+^src/FUNCTIONS$
+^src/Makefile\.local$
+^cran-comments\.md$
+^python$

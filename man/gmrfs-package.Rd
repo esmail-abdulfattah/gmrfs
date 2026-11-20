@@ -4,15 +4,27 @@
 \name{gmrfs-package}
 \alias{gmrfs-package}
 \alias{gmrfs}
-\title{gmrfs: Adaptive GMRF models for INLA via cgeneric}
+\title{gmrfs: Adaptive Gaussian Markov random field models}
 \description{
-Provides four cgeneric latent models — `fbesag`,
-`cblocks`, `pblocks`, `sblocks` — for use as
-`f(idx, model = .)` in [INLA::inla()] formulas. When INLA ships a
-precompiled library for a model (queried via
-[INLA::inla.external.lib()]), the wrappers use that copy; otherwise
-they use the shared library compiled at install time from
-`src/*.c`.
+Provides five latent Gaussian Markov random field models: \code{fbesag},
+\code{fbym2}, \code{cblocks}, \code{pblocks} and \code{sblocks}.
+}
+\details{
+Each model can be used in two ways:
+\itemize{
+\item directly from R, through \code{\link[=gmrf_Q]{gmrf_Q()}}, \code{\link[=gmrf_mu]{gmrf_mu()}}, \code{\link[=gmrf_log_prior]{gmrf_log_prior()}}
+and the other functions in \link{gmrf_eval}, for use in your own sampler
+or optimiser. This does not need INLA.
+\item as \code{f(idx, model = .)} in an \code{INLA::inla()} formula, through INLA's
+\code{cgeneric} interface. When INLA ships a precompiled library for a
+model, the wrappers use that copy; otherwise they use the shared
+library compiled with this package.
+}
+
+None of the models needs INLA to be built or evaluated. For \code{fbesag()} and
+\code{fbym2()} the package has its own copies of INLA's graph reading, scaling
+and the prior of the mixing parameter; INLA is needed only to fit with
+\code{INLA::inla()}.
 }
 \seealso{
 Useful links:
@@ -28,6 +40,12 @@ Useful links:
 Authors:
 \itemize{
   \item Esmail Abdul Fattah \email{esmail.abdulfattah@kaust.edu.sa}
+}
+
+Other contributors:
+\itemize{
+  \item Havard Rue (R-INLA code in src/cgeneric.h, R/pc-bym.R and R/graph.R) [contributor]
+  \item The R-INLA project (src/cgeneric.h, R/pc-bym.R and R/graph.R, see inst/COPYRIGHTS) [copyright holder]
 }
 
 }

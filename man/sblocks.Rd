@@ -24,12 +24,37 @@ sblocks(
 
 \item{p}{number of blocks.}
 
-\item{R_list}{a length-`p` list of `n x n` per-block precision matrices.}
+\item{R_list}{a length-\code{p} list of \verb{n x n} per-block precision matrices.}
 
-\item{tau0}{horseshoe-style global scale (default 1). See
-[cblocks()].}
+\item{tau}{global scale of the horseshoe. Either a positive number to fix
+\code{tau} at that constant, or the string \code{"marginal"} to integrate \code{tau}
+out of the prior via a 60-point log-tau quadrature (recommended when
+you want a data-driven global scale). Defaults to \code{tau0} if \code{tau0} is
+supplied and \code{tau} is not, otherwise \code{1.0}.}
 
-\item{shlib}{optional path to a specific `.so`/`.dll`. When supplied
+\item{tau0}{back-compat alias for \code{tau} when \code{tau} is not supplied.
+Older gmrfs code that passed \code{tau0 = X} continues to work.}
+
+\item{noise_scale}{logical. If TRUE, read the Gaussian family's noise
+precision from INLA at each call and multiply the resulting
+\code{sigma_e} into the horseshoe global scale, so the prior becomes
+\verb{sigma_j ~ C+(0, tau * sigma_e)} (matches the sigma^2-scaled
+horseshoe). Requires an INLA that populates \verb{data->theta_all_*}.
+Ignored if the Gaussian family precision is fixed.  Default FALSE.}
+
+\item{prior}{prior name (default \code{"horseshoe"}). Only used when
+\code{tau} is a number and \code{noise_scale} is FALSE (the "plain" path).
+\code{noise_scale = TRUE} or \code{tau = "marginal"} forces the horseshoe.}
+
+\item{param}{optional prior parameters; if NULL, defaults to the
+scale set by \code{tau}.}
+
+\item{fixed}{optional vector of length 1 or \code{p} of fixed block
+precisions (on the original, non-log scale). When supplied, the
+block log-precisions are held at those values and no
+hyperparameters are estimated.}
+
+\item{shlib}{optional path to a specific \code{.so}/\code{.dll}. When supplied
 it overrides the resolution chain (local dir, INLA, package).}
 
 \item{prefer_inla}{if TRUE, prefer INLA's precompiled library when
@@ -38,11 +63,18 @@ shipped.}
 \item{debug}{logical.}
 }
 \value{
-cgeneric model handle.
+A model handle, as for \code{\link[=cblocks]{cblocks()}}.
 }
 \description{
-Latent dimension is `p * n`: blocks are concatenated.  The precision
-is block-diagonal `diag(exp(theta_1) R_1, ..., exp(theta_p) R_p)`.
-Each `R_j` is supplied as a dense `n x n` precision/structure matrix
-(typically `R_j = G_j^{-1}` for some block covariance `G_j`).
+Latent dimension is \code{p * n}: blocks are concatenated.  The precision
+is block-diagonal \verb{diag(exp(theta_1) R_1, ..., exp(theta_p) R_p)}.
+Each \code{R_j} is supplied as a dense \verb{n x n} precision/structure matrix
+(typically \code{R_j = G_j^{-1}} for some block covariance \code{G_j}).
+}
+\examples{
+ar1_cov <- function(n, rho) rho^abs(outer(seq_len(n), seq_len(n), "-"))
+R_list <- list(solve(ar1_cov(10, 0.5)), solve(ar1_cov(10, 0.2)))
+sm <- sblocks(n = 10, p = 2, R_list = R_list)
+## block-diagonal: exp(theta_j) * R_j
+gmrf_Q(sm, theta = c(0, 1))[1:3, 1:3]
 }

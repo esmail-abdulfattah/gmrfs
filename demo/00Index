@@ -2,3 +2,4 @@ fbesag	Minimal 5-node fbesag() smoke test
 cblocks	Minimal collapsed-block cblocks() smoke test
 pblocks	Minimal partial-block pblocks() smoke test
 sblocks	Minimal stacked-block sblocks() smoke test
+fbym2_mcmc	fbym2 fitted by MCMC with gmrf_log_density() and gmrf_sample(), compared with INLA

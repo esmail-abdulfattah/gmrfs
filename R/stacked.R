@@ -8,14 +8,19 @@
 #' @param n block size.
 #' @param p number of blocks.
 #' @param R_list a length-`p` list of `n x n` per-block precision matrices.
-#' @param tau0 horseshoe-style global scale (default 1). See
-#'   [cblocks()].
+#' @inheritParams cblocks
 #' @param shlib optional path to a specific `.so`/`.dll`. When supplied
 #'   it overrides the resolution chain (local dir, INLA, package).
 #' @param prefer_inla if TRUE, prefer INLA's precompiled library when
 #'   shipped.
 #' @param debug logical.
-#' @return cgeneric model handle.
+#' @return A model handle, as for [cblocks()].
+#' @examples
+#' ar1_cov <- function(n, rho) rho^abs(outer(seq_len(n), seq_len(n), "-"))
+#' R_list <- list(solve(ar1_cov(10, 0.5)), solve(ar1_cov(10, 0.2)))
+#' sm <- sblocks(n = 10, p = 2, R_list = R_list)
+#' ## block-diagonal: exp(theta_j) * R_j
+#' gmrf_Q(sm, theta = c(0, 1))[1:3, 1:3]
 #' @export
 sblocks <- function(n, p, R_list,
                     tau         = NULL,
@@ -27,8 +32,6 @@ sblocks <- function(n, p, R_list,
                     shlib       = NULL,
                     prefer_inla = TRUE,
                     debug       = FALSE) {
-  if (!requireNamespace("INLA", quietly = TRUE))
-    stop("INLA is required", call. = FALSE)
   n <- as.integer(n); p <- as.integer(p)
   if (!is.list(R_list) || length(R_list) != p)
     stop(sprintf("R_list must be a list of length p = %d", p), call. = FALSE)
@@ -72,9 +75,8 @@ sblocks <- function(n, p, R_list,
     logdet_R_all <- logdet_R_all + 2 * sum(log(diag(ch)))
   }
 
-  INLA::inla.cgeneric.define(
-    model        = "inla_cgeneric_gmrfs_sblocks",
-    shlib        = gmrfs_resolve_shlib("sblocks", shlib, prefer_inla),
+  gmrfs_cgeneric_define(
+    "inla_cgeneric_gmrfs_sblocks", "sblocks",
     n            = as.integer(n * p),
     p            = p,
     R_stacked    = R_stacked,
@@ -86,6 +88,8 @@ sblocks <- function(n, p, R_list,
     param        = pp,
     fixed        = fixed_flag,
     theta_fixed  = theta_fixed,
+    shlib        = shlib,
+    prefer_inla  = prefer_inla,
     debug        = isTRUE(debug)
   )
 }

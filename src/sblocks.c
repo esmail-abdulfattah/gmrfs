@@ -101,6 +101,7 @@ double *inla_cgeneric_gmrfs_sblocks(inla_cgeneric_cmd_tp cmd,
 
     int p = find_int_named(data, "p");
     assert(p > 0);
+    if (N <= 0 || p <= 0) return NULL;
     assert(N % p == 0);
     int block_n = N / p;
 

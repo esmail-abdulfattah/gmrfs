@@ -1,4 +1,4 @@
-# Local build of the four gmrfs cgeneric shared libraries.
+# Local build of the five gmrfs cgeneric shared libraries.
 # Use this to compile and use the .so files directly from src/
 # without going through `R CMD INSTALL`.
 #
@@ -6,8 +6,8 @@
 # would then use it instead of `Makevars`, breaking the package build.
 #
 # Usage:
-#   make -f Makefile.local                -- build all four
-#   make -f Makefile.local <model>        -- build one .so (fbesag,
+#   make -f Makefile.local                -- build all five
+#   make -f Makefile.local <model>        -- build one .so (fbesag, fbym2,
 #                                            cblocks, pblocks, sblocks)
 #   make -f Makefile.local clean          -- remove .o and .so files
 #
@@ -28,7 +28,7 @@ else
     EXT := so
 endif
 
-MODELS := fbesag cblocks pblocks sblocks
+MODELS := fbesag fbym2 cblocks pblocks sblocks
 SHLIBS := $(addsuffix .$(EXT),$(MODELS))
 
 .PHONY: all clean $(MODELS)
@@ -44,6 +44,7 @@ all: $(SHLIBS)
 
 # Convenience aliases: `make -f Makefile.local fbesag` builds fbesag.<EXT>.
 fbesag:  fbesag.$(EXT)
+fbym2:   fbym2.$(EXT)
 cblocks: cblocks.$(EXT)
 pblocks: pblocks.$(EXT)
 sblocks: sblocks.$(EXT)

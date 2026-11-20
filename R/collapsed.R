@@ -37,7 +37,22 @@
 #' @param shlib optional path to a specific `.so`/`.dll`.
 #' @param prefer_inla if TRUE, prefer INLA's precompiled library when shipped.
 #' @param debug logical.
-#' @return cgeneric model handle.
+#' @return A model handle (class `inla.cgeneric`), for use as
+#'   `f(idx, model = .)` in INLA or with [gmrf_Q()] and the other
+#'   functions in [gmrf_eval].
+#' @examples
+#' ar1_cov <- function(n, rho) rho^abs(outer(seq_len(n), seq_len(n), "-"))
+#' G_list <- list(ar1_cov(10, 0.5), ar1_cov(10, 0.2))
+#' cm <- cblocks(n = 10, p = 2, G_list = G_list)
+#' gmrf_Q(cm, theta = c(0, 1))
+#'
+#' @examplesIf requireNamespace("INLA", quietly = TRUE)
+#' \donttest{
+#' fit <- INLA::inla(y ~ 1 + f(idx, model = cm),
+#'                   data = list(y = rnorm(10), idx = 1:10),
+#'                   control.inla = list(int.strategy = "eb"))
+#' fit$summary.hyperpar
+#' }
 #' @export
 cblocks <- function(n, p, G_list,
                     tau         = NULL,
@@ -50,8 +65,6 @@ cblocks <- function(n, p, G_list,
                     shlib       = NULL,
                     prefer_inla = TRUE,
                     debug       = FALSE) {
-  if (!requireNamespace("INLA", quietly = TRUE))
-    stop("INLA is required", call. = FALSE)
   n <- as.integer(n); p <- as.integer(p)
   if (!is.list(G_list) || length(G_list) != p)
     stop(sprintf("G_list must be a list of length p = %d", p), call. = FALSE)
@@ -92,9 +105,8 @@ cblocks <- function(n, p, G_list,
     G[((j - 1L) * n + 1L):(j * n), ] <- Gj
   }
 
-  INLA::inla.cgeneric.define(
-    model       = "inla_cgeneric_gmrfs_cblocks",
-    shlib       = gmrfs_resolve_shlib("cblocks", shlib, prefer_inla),
+  gmrfs_cgeneric_define(
+    "inla_cgeneric_gmrfs_cblocks", "cblocks",
     n           = n,
     p           = p,
     G           = G,
@@ -106,6 +118,8 @@ cblocks <- function(n, p, G_list,
     param       = pp,
     fixed       = fixed_flag,
     theta_fixed = theta_fixed,
+    shlib       = shlib,
+    prefer_inla = prefer_inla,
     debug       = isTRUE(debug)
   )
 }

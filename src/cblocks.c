@@ -129,6 +129,7 @@ double *inla_cgeneric_gmrfs_cblocks(inla_cgeneric_cmd_tp cmd,
 
     int p = find_int_named(data, "p");
     assert(p > 0);
+    if (n <= 0 || p <= 0) return NULL;
 
     /* fixed mode: hold the block precisions at theta_fixed, expose 0 hyperpar */
     int fixed = find_int_named(data, "fixed");

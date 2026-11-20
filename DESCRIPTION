@@ -1,26 +1,41 @@
 Package: gmrfs
 Type: Package
-Title: Adaptive GMRF Models for INLA via cgeneric
+Title: Adaptive Gaussian Markov Random Field Models
 Version: 0.1.0
 Authors@R: c(
     person("Esmail", "Abdul Fattah",
            email = "esmail.abdulfattah@kaust.edu.sa",
-           role  = c("aut", "cre"))
+           role  = c("aut", "cre")),
+    person("Havard", "Rue", role = "ctb",
+           comment = "R-INLA code in src/cgeneric.h, R/pc-bym.R and R/graph.R"),
+    person("The R-INLA project", role = "cph",
+           comment = "src/cgeneric.h, R/pc-bym.R and R/graph.R, see inst/COPYRIGHTS")
   )
-Description: Wraps four adaptive Gaussian Markov random field models -
-    fbesag (Besag with partitioned precisions), collapsed, partial, and
-    stacked block models - exposed to R-INLA through its cgeneric
-    interface. When INLA ships a precompiled library for a given model
-    (via inla.external.lib), that copy is preferred; otherwise the
-    package's own compiled shared library is used.
+Description: Latent Gaussian Markov random field models with adaptive
+    precision structure: a Besag model and a BYM2 model with partitioned
+    precisions, and collapsed, partial and stacked block models with
+    shrinkage priors on the block scales. The precision matrix, mean,
+    hyperparameter prior and normalising constant of each model can be
+    evaluated directly from R, for use in custom samplers or optimisers.
+    The same models can be used as latent components in 'INLA' through its
+    'cgeneric' interface. Also provides an orthogonal matching pursuit
+    screen for selecting active blocks.
 License: GPL (>= 2)
+Copyright: See file inst/COPYRIGHTS.
 Encoding: UTF-8
 Depends:
     R (>= 4.0)
 Imports:
+    Matrix,
+    methods,
+    parallel,
+    stats
+Suggests:
     INLA,
-    Matrix
+    testthat (>= 3.0.0)
 Additional_repositories: https://inla.r-inla-download.org/R/stable
 URL: https://github.com/esmail-abdulfattah/gmrfs
 BugReports: https://github.com/esmail-abdulfattah/gmrfs/issues
+Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.0.0
+Config/testthat/edition: 3

@@ -2,8 +2,22 @@ useDynLib(gmrfs, .registration = TRUE)
 
 S3method(print, omp_select)
 
+importFrom(methods, as, is)
+importFrom(Matrix, diag, "diag<-")
+
 export(fbesag)
+export(fbym2)
 export(cblocks)
 export(pblocks)
 export(sblocks)
 export(omp_select)
+
+export(gmrf_Q)
+export(gmrf_graph)
+export(gmrf_mu)
+export(gmrf_initial)
+export(gmrf_log_prior)
+export(gmrf_log_norm_const)
+export(gmrf_log_density)
+export(gmrf_sample)
+

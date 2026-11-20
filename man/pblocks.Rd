@@ -24,16 +24,48 @@ pblocks(
 \arguments{
 \item{n}{block size.}
 
-\item{p}{number of blocks (= length of `G_list`).}
+\item{p}{number of blocks (= length of \code{G_list}).}
 
-\item{G_list}{a length-`p` list of `n x n` per-block covariance matrices.}
+\item{G_list}{a length-\code{p} list of \verb{n x n} per-block covariance matrices.}
 
-\item{separate}{integer in `1..p` -- which block to keep separate
+\item{separate}{integer in \verb{1..p} -- which block to keep separate
 (default 1).}
 
-\item{tau0}{horseshoe-style global scale (default 1). See [cblocks()].}
+\item{tau}{global scale of the horseshoe. Either a positive number to fix
+\code{tau} at that constant, or the string \code{"marginal"} to integrate \code{tau}
+out of the prior via a 60-point log-tau quadrature (recommended when
+you want a data-driven global scale). Defaults to \code{tau0} if \code{tau0} is
+supplied and \code{tau} is not, otherwise \code{1.0}.}
 
-\item{shlib}{optional path to a specific `.so`/`.dll`. When supplied it
+\item{tau0}{back-compat alias for \code{tau} when \code{tau} is not supplied.
+Older gmrfs code that passed \code{tau0 = X} continues to work.}
+
+\item{noise_scale}{logical. If TRUE, read the Gaussian family's noise
+precision from INLA at each call and multiply the resulting
+\code{sigma_e} into the horseshoe global scale, so the prior becomes
+\verb{sigma_j ~ C+(0, tau * sigma_e)} (matches the sigma^2-scaled
+horseshoe). Requires an INLA that populates \verb{data->theta_all_*}.
+Ignored if the Gaussian family precision is fixed.  Default FALSE.}
+
+\item{nugget}{diagonal floor added to \code{Sigma(theta)} before the
+Cholesky, for numerical stability when all blocks are strongly
+shrunk. Default \code{0} for backward compatibility; auto-bumped to
+\code{1e-4} if \code{tau = "marginal"} (marg-tau visits arbitrarily small
+tau on the quadrature grid, where a nugget is essential).}
+
+\item{prior}{prior name (default \code{"horseshoe"}). Only used when
+\code{tau} is a number and \code{noise_scale} is FALSE (the "plain" path).
+\code{noise_scale = TRUE} or \code{tau = "marginal"} forces the horseshoe.}
+
+\item{param}{optional prior parameters; if NULL, defaults to the
+scale set by \code{tau}.}
+
+\item{fixed}{optional vector of length 1 or \code{p} of fixed block
+precisions (on the original, non-log scale). When supplied, the
+block log-precisions are held at those values and no
+hyperparameters are estimated.}
+
+\item{shlib}{optional path to a specific \code{.so}/\code{.dll}. When supplied it
 overrides the resolution chain (local dir, INLA, package).}
 
 \item{prefer_inla}{if TRUE, prefer INLA's precompiled library when shipped.}
@@ -41,15 +73,21 @@ overrides the resolution chain (local dir, INLA, package).}
 \item{debug}{logical.}
 }
 \value{
-cgeneric model handle. The attribute `block_order` records
-  how `theta[j]` maps back to the original `G_list` index --
-  `theta[j]` corresponds to `G_list[[ block_order[j] ]]`.
+A model handle, as for \code{\link[=cblocks]{cblocks()}}. The attribute \code{block_order} records
+how \code{theta[j]} maps back to the original \code{G_list} index --
+\code{theta[j]} corresponds to \code{G_list[[ block_order[j] ]]}.
 }
 \description{
-Latent dimension is `2 * n`. Block `separate` is treated individually
-with precision `exp(theta[1]) * R_separate`; the remaining `p - 1`
-blocks are collapsed into `Sigma_rest = sum_{j != separate}
-exp(-theta[j]) G_j`. There are `p` hyperparameters: `theta[1]` is the
-separated block, `theta[2..p]` are the collapsed blocks in their
+Latent dimension is \code{2 * n}. Block \code{separate} is treated individually
+with precision \code{exp(theta[1]) * R_separate}; the remaining \code{p - 1}
+blocks are collapsed into \verb{Sigma_rest = sum_\{j != separate\} exp(-theta[j]) G_j}. There are \code{p} hyperparameters: \code{theta[1]} is the
+separated block, \verb{theta[2..p]} are the collapsed blocks in their
 original order minus the separated one.
+}
+\examples{
+ar1_cov <- function(n, rho) rho^abs(outer(seq_len(n), seq_len(n), "-"))
+G_list <- list(ar1_cov(10, 0.5), ar1_cov(10, 0.2))
+pm <- pblocks(n = 10, p = 2, G_list = G_list, separate = 2)
+attr(pm, "block_order")
+dim(gmrf_Q(pm, theta = c(0, 1)))
 }
