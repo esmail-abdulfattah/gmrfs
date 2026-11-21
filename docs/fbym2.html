@@ -49,8 +49,8 @@
       <table>
         <thead><tr><th>parameter</th><th>meaning</th></tr></thead>
         <tbody>
-          <tr><td><strong>$\tau$</strong></td><td>precision of $v_i$</td></tr>
-          <tr><td><strong>$\phi$</strong></td><td>spatial share of the variance</td></tr>
+          <tr><td><strong>$\tau$</strong></td><td class="nw">precision of $v_i$</td></tr>
+          <tr><td><strong>$\phi$</strong></td><td class="nw">spatial share of the variance</td></tr>
           <tr><td><strong>$d_k$</strong></td><td>log precision of the spatial part in sub-region $k$, relative to the map: $d_k &gt; 0$ smoother, $d_k &lt; 0$ rougher</td></tr>
         </tbody>
       </table>
@@ -66,9 +66,9 @@
       <table>
         <thead><tr><th>parameter</th><th>prior</th><th>default</th><th>meaning</th></tr></thead>
         <tbody>
-          <tr><td><strong>$\tau$</strong></td><td>PC</td><td><code>prec = c(1, 0.01)</code></td><td>$P(1/\sqrt\tau &gt; 1) = 0.01$</td></tr>
-          <tr><td><strong>$\phi$</strong></td><td>PC of BYM2</td><td><code>phi = c(0.5, 0.5)</code></td><td>$P(\phi &lt; 0.5) = 0.5$</td></tr>
-          <tr><td><strong>$\mathbf d$</strong></td><td>$\mathcal N\big(\mathbf 0, \sigma_\gamma^2 (I - \tfrac1P J)\big)$</td><td><code>sd_gamma = 0.2</code></td><td>as in fbesag; $\sigma_\gamma \to 0$ gives bym2</td></tr>
+          <tr><td><strong>$\tau$</strong></td><td>PC</td><td class="nw"><code>prec = c(1, 0.01)</code></td><td class="nw">$P(1/\sqrt\tau &gt; 1) = 0.01$</td></tr>
+          <tr><td><strong>$\phi$</strong></td><td class="nw">PC of BYM2</td><td class="nw"><code>phi = c(0.5, 0.5)</code></td><td class="nw">$P(\phi &lt; 0.5) = 0.5$</td></tr>
+          <tr><td class="nw"><strong>$\mathbf d$</strong></td><td>$\mathcal N\big(\mathbf 0, \sigma_\gamma^2 (I - \tfrac1P J)\big)$</td><td class="nw"><code>sd_gamma = 0.2</code></td><td>as in fbesag; $\sigma_\gamma \to 0$ gives bym2</td></tr>
         </tbody>
       </table>
       </div>
@@ -146,11 +146,11 @@ fbym2 0.66 0.50 0.25 0.28 0.33</code></pre>
       <table>
         <thead><tr><th>truth</th><th></th><th>model</th><th class="num">North</th><th class="num">Northeast</th><th class="num">Southeast</th><th class="num">South</th><th class="num">Centre-West</th></tr></thead>
         <tbody>
-          <tr><td><strong>regions differ</strong></td><td>RMSE</td><td>bym2</td><td class="num">0.527</td><td class="num">0.495</td><td class="num">0.328</td><td class="num">0.345</td><td class="num">0.331</td></tr>
+          <tr><td class="nw"><strong>regions differ</strong></td><td>RMSE</td><td>bym2</td><td class="num">0.527</td><td class="num">0.495</td><td class="num">0.328</td><td class="num">0.345</td><td class="num">0.331</td></tr>
           <tr><td></td><td></td><td>fbym2</td><td class="num">0.485</td><td class="num">0.442</td><td class="num">0.250</td><td class="num">0.258</td><td class="num">0.303</td></tr>
           <tr><td></td><td>coverage</td><td>bym2</td><td class="num">0.886</td><td class="num">0.889</td><td class="num">0.977</td><td class="num">0.973</td><td class="num">0.968</td></tr>
           <tr><td></td><td></td><td>fbym2</td><td class="num">0.928</td><td class="num">0.946</td><td class="num">0.959</td><td class="num">0.953</td><td class="num">0.937</td></tr>
-          <tr><td><strong>no difference</strong>, all $d_k = 0$</td><td>RMSE</td><td>bym2</td><td class="num">0.316</td><td class="num">0.320</td><td class="num">0.320</td><td class="num">0.301</td><td class="num">0.302</td></tr>
+          <tr><td class="nw"><strong>no difference</strong>, all $d_k = 0$</td><td>RMSE</td><td>bym2</td><td class="num">0.316</td><td class="num">0.320</td><td class="num">0.320</td><td class="num">0.301</td><td class="num">0.302</td></tr>
           <tr><td></td><td></td><td>fbym2</td><td class="num">0.318</td><td class="num">0.321</td><td class="num">0.321</td><td class="num">0.303</td><td class="num">0.306</td></tr>
           <tr><td></td><td>coverage</td><td>bym2</td><td class="num">0.949</td><td class="num">0.945</td><td class="num">0.945</td><td class="num">0.941</td><td class="num">0.957</td></tr>
           <tr><td></td><td></td><td>fbym2</td><td class="num">0.943</td><td class="num">0.949</td><td class="num">0.942</td><td class="num">0.943</td><td class="num">0.945</td></tr>
@@ -173,10 +173,10 @@ fbym2 0.66 0.50 0.25 0.28 0.33</code></pre>
       <table>
         <thead><tr><th>function</th><th>returns</th></tr></thead>
         <tbody>
-          <tr><td><code>gmrf_Q(m_regions, theta)</code></td><td>the precision matrix of $(\mathbf v, \mathbf u)$</td></tr>
+          <tr><td class="nw"><code>gmrf_Q(m_regions, theta)</code></td><td>the precision matrix of $(\mathbf v, \mathbf u)$</td></tr>
           <tr><td><code>gmrf_log_prior(m_regions, theta)</code></td><td>the log prior of $\boldsymbol\theta$</td></tr>
           <tr><td><code>gmrf_log_density(m_regions, x, theta)</code></td><td>$\log \pi(\mathbf v, \mathbf u \mid \boldsymbol\theta)$, with the sum-to-zero constraints</td></tr>
-          <tr><td><code>gmrf_sample(m_regions, theta)</code></td><td>draws of $(\mathbf v, \mathbf u) \mid \boldsymbol\theta$ on the constraints</td></tr>
+          <tr><td class="nw"><code>gmrf_sample(m_regions, theta)</code></td><td>draws of $(\mathbf v, \mathbf u) \mid \boldsymbol\theta$ on the constraints</td></tr>
         </tbody>
       </table>
       </div>

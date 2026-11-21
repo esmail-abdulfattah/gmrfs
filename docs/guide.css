@@ -88,3 +88,5 @@ footer a { color: #0b7f82; text-decoration: none; }
 
 /* short code in tables stays on one line; the table scrolls if needed */
 td code, th code { white-space: nowrap; }
+/* short phrases in tables stay on one line */
+td.nw, th.nw { white-space: nowrap; }

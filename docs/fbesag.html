@@ -57,7 +57,7 @@
       <table>
         <thead><tr><th>argument</th><th>default</th><th>meaning</th></tr></thead>
         <tbody>
-          <tr><td><code>param</code></td><td><code>list(p1 = 1, p2 = 1e-5)</code></td><td>$P(\text{common sd} &gt; 1) = 10^{-5}$</td></tr>
+          <tr><td><code>param</code></td><td class="nw"><code>list(p1 = 1, p2 = 1e-5)</code></td><td>$P(\text{common sd} &gt; 1) = 10^{-5}$</td></tr>
           <tr><td><code>sd_gamma</code></td><td>0.2</td><td>with five sub-regions, each $\tau_k$ within a factor of about 1.4 of the common level (two sd); with 1, about 6</td></tr>
         </tbody>
       </table>
@@ -139,9 +139,9 @@ round(tapply(abs(map_df$diff), region_names[region], max)[region_names], 2)</cod
       <p>Compare with fbesag with one sub-region, not INLA's besag, whose default prior is different.</p>
       <div class="table-wrap">
       <table>
-        <thead><tr><th></th><th class="num">$\sigma_\gamma = 0.2$</th><th class="num">$\sigma_\gamma = 1$</th></tr></thead>
+        <thead><tr><th></th><th class="num nw">$\sigma_\gamma = 0.2$</th><th class="num nw">$\sigma_\gamma = 1$</th></tr></thead>
         <tbody>
-          <tr><td><strong>log BF, April</strong></td><td class="num">10.6</td><td class="num">10.4</td></tr>
+          <tr><td class="nw"><strong>log BF, April</strong></td><td class="num">10.6</td><td class="num">10.4</td></tr>
         </tbody>
       </table>
       </div>
@@ -154,12 +154,12 @@ round(tapply(abs(map_df$diff), region_names[region], max)[region_names], 2)</cod
       <pre><code>x &lt;- gmrf_sample(m_regions, theta = c(-1, -1, -1.8, -1, -1))</code></pre>
       <div class="table-wrap">
       <table>
-        <thead><tr><th>truth</th><th>$\sigma_\gamma$</th><th class="num">log BF, median (range)</th><th class="num">log BF &gt; 0</th><th class="num">$\theta$ Southeast, mean</th><th class="num">interval covers truth</th></tr></thead>
+        <thead><tr><th>truth</th><th>$\sigma_\gamma$</th><th class="num nw">log BF, median (range)</th><th class="num nw">log BF &gt; 0</th><th class="num nw">$\theta$ Southeast, mean</th><th class="num nw">interval covers truth</th></tr></thead>
         <tbody>
-          <tr><td><strong>stationary</strong>, all $-1.3$</td><td>0.2</td><td class="num">&minus;0.9 (&minus;1.7 to 0.6)</td><td class="num">4 of 20</td><td class="num">&minus;1.29</td><td class="num">19 of 20</td></tr>
-          <tr><td></td><td>1</td><td class="num">&minus;5.8 (&minus;7.0 to &minus;2.8)</td><td class="num">0 of 20</td><td class="num">&minus;1.31</td><td class="num">19 of 20</td></tr>
-          <tr><td><strong>Southeast</strong> $-1.8$, others $-1.0$</td><td>0.2</td><td class="num">13.1 (3.9 to 19.3)</td><td class="num">20 of 20</td><td class="num">&minus;1.60</td><td class="num">8 of 20</td></tr>
-          <tr><td></td><td>1</td><td class="num">13.4 (0.7 to 21.1)</td><td class="num">20 of 20</td><td class="num">&minus;1.75</td><td class="num">17 of 20</td></tr>
+          <tr><td class="nw"><strong>stationary</strong>, all $-1.3$</td><td>0.2</td><td class="num nw">&minus;0.9 (&minus;1.7 to 0.6)</td><td class="num nw">4 of 20</td><td class="num">&minus;1.29</td><td class="num nw">19 of 20</td></tr>
+          <tr><td></td><td>1</td><td class="num nw">&minus;5.8 (&minus;7.0 to &minus;2.8)</td><td class="num nw">0 of 20</td><td class="num">&minus;1.31</td><td class="num nw">19 of 20</td></tr>
+          <tr><td><strong>Southeast</strong> $-1.8$, others $-1.0$</td><td>0.2</td><td class="num nw">13.1 (3.9 to 19.3)</td><td class="num nw">20 of 20</td><td class="num">&minus;1.60</td><td class="num nw">8 of 20</td></tr>
+          <tr><td></td><td>1</td><td class="num nw">13.4 (0.7 to 21.1)</td><td class="num nw">20 of 20</td><td class="num">&minus;1.75</td><td class="num nw">17 of 20</td></tr>
         </tbody>
       </table>
       </div>
@@ -167,11 +167,11 @@ round(tapply(abs(map_df$diff), region_names[region], max)[region_names], 2)</cod
       <p>With no difference between the regions (stationary truth), the estimates and intervals of $x_i$ are the same as with one precision:</p>
       <div class="table-wrap">
       <table>
-        <thead><tr><th>model</th><th class="num">RMSE, Southeast</th><th class="num">RMSE, other regions</th><th class="num">coverage, Southeast</th><th class="num">coverage, other regions</th></tr></thead>
+        <thead><tr><th>model</th><th class="num nw">RMSE, Southeast</th><th class="num nw">RMSE, other regions</th><th class="num nw">coverage, Southeast</th><th class="num nw">coverage, other regions</th></tr></thead>
         <tbody>
-          <tr><td>one precision</td><td class="num">0.170</td><td class="num">0.204</td><td class="num">0.947</td><td class="num">0.949</td></tr>
-          <tr><td>fbesag, $\sigma_\gamma = 0.2$</td><td class="num">0.170</td><td class="num">0.203</td><td class="num">0.948</td><td class="num">0.949</td></tr>
-          <tr><td>fbesag, $\sigma_\gamma = 1$</td><td class="num">0.170</td><td class="num">0.203</td><td class="num">0.949</td><td class="num">0.949</td></tr>
+          <tr><td class="nw">one precision</td><td class="num">0.170</td><td class="num">0.204</td><td class="num">0.947</td><td class="num">0.949</td></tr>
+          <tr><td class="nw">fbesag, $\sigma_\gamma = 0.2$</td><td class="num">0.170</td><td class="num">0.203</td><td class="num">0.948</td><td class="num">0.949</td></tr>
+          <tr><td class="nw">fbesag, $\sigma_\gamma = 1$</td><td class="num">0.170</td><td class="num">0.203</td><td class="num">0.949</td><td class="num">0.949</td></tr>
         </tbody>
       </table>
       </div>
@@ -183,10 +183,10 @@ round(tapply(abs(map_df$diff), region_names[region], max)[region_names], 2)</cod
       <table>
         <thead><tr><th>function</th><th>returns</th></tr></thead>
         <tbody>
-          <tr><td><code>gmrf_Q(m_regions, theta)</code></td><td>the precision matrix $Q(\boldsymbol\theta)$</td></tr>
+          <tr><td class="nw"><code>gmrf_Q(m_regions, theta)</code></td><td>the precision matrix $Q(\boldsymbol\theta)$</td></tr>
           <tr><td><code>gmrf_log_prior(m_regions, theta)</code></td><td>the log prior of $\boldsymbol\theta$</td></tr>
           <tr><td><code>gmrf_log_density(m_regions, x, theta)</code></td><td>$\log \pi(\mathbf x \mid \boldsymbol\theta)$, with the sum-to-zero constraints</td></tr>
-          <tr><td><code>gmrf_sample(m_regions, theta)</code></td><td>draws of $\mathbf x \mid \boldsymbol\theta$ on the constraints</td></tr>
+          <tr><td class="nw"><code>gmrf_sample(m_regions, theta)</code></td><td>draws of $\mathbf x \mid \boldsymbol\theta$ on the constraints</td></tr>
         </tbody>
       </table>
       </div>
