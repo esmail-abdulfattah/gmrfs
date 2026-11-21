@@ -18,7 +18,6 @@
     <div class="nav-links">
       <a href="#models">Models</a>
       <a href="#publications">Publications</a>
-      <a href="#collab">Collaborate</a>
       <a href="#contact">Contact</a>
       <a href="https://github.com/esmail-abdulfattah" target="_blank" class="nav-github">
         <svg height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
@@ -48,7 +47,7 @@
       <p class="hero-sub">
         A collection of extended Gaussian Markov Random Field models
         for Bayesian spatial and spatio-temporal inference,
-        implemented within the INLA framework.
+        with INLA or MCMC.
       </p>
       <div class="hero-actions">
         <a href="#models" class="btn btn-primary">Explore Models</a>
@@ -62,10 +61,7 @@
 <section id="models" class="section">
   <div class="inner">
     <h2 class="section-title">Models</h2>
-    <p class="section-sub">
-      Each model extends a classical GMRF to capture richer spatial structure,
-      implemented via the INLA <code>cgeneric</code> interface for efficient Bayesian inference.
-    </p>
+    <p class="section-sub">Latent models for INLA and for MCMC.</p>
 
     <div class="model-grid">
 
@@ -76,23 +72,12 @@
         </div>
         <div class="model-body">
           <div class="model-header">
-            <span class="model-name">fbesag</span>
+            <a href="fbesag.html" class="model-name card-link">fbesag</a>
             <span class="badge badge-published">Published</span>
           </div>
-          <p class="model-desc">
-            Non-stationary extension of the Besag (ICAR) model. Allows the
-            precision parameter to vary across spatial sub-regions, capturing
-            local heterogeneity in areal data. Includes a joint PC prior for
-            contraction to the stationary model.
-          </p>
-          <div class="model-tags">
-            <span class="tag">Non-stationary</span>
-            <span class="tag">Disease mapping</span>
-            <span class="tag">PC prior</span>
-          </div>
+          <p class="model-desc">Non-stationary spatial model: the smoothness differs between sub-regions, with a test of whether it does.</p>
           <div class="model-links">
-            <a href="https://esmail-abdulfattah.github.io/fbesag/" target="_blank" class="btn-card">Site</a>
-            <a href="https://github.com/esmail-abdulfattah/fbesag" target="_blank" class="btn-card btn-card-outline">GitHub</a>
+            <a href="fbesag.html" class="btn-card">Guide</a>
             <a href="https://journals.sagepub.com/doi/full/10.1177/09622802241244613" target="_blank" class="btn-card btn-card-outline">Paper</a>
           </div>
         </div>
@@ -105,23 +90,10 @@
         </div>
         <div class="model-body">
           <div class="model-header">
-            <span class="model-name">fbym2</span>
-            <span class="badge badge-dev">In Development</span>
-          </div>
-          <p class="model-desc">
-            Flexible extension of the BYM2 model, combining structured
-            (ICAR) and unstructured (iid) spatial effects with
-            sub-region-varying precision parameters. Inherits the
-            interpretability and scaling properties of BYM2 while
-            relaxing the stationarity assumption.
-          </p>
-          <div class="model-tags">
-            <span class="tag">BYM2</span>
-            <span class="tag">Non-stationary</span>
-            <span class="tag">Structured + iid</span>
-          </div>
+            <a href="fbym2.html" class="model-name card-link">fbym2</a>          </div>
+          <p class="model-desc">Non-stationary spatial model with noise: a spatial part whose smoothness differs between sub-regions, plus noise.</p>
           <div class="model-links">
-            <span class="btn-card btn-card-disabled">Coming soon</span>
+            <a href="fbym2.html" class="btn-card">Guide</a>
           </div>
         </div>
       </div>
@@ -133,22 +105,10 @@
         </div>
         <div class="model-body">
           <div class="model-header">
-            <span class="model-name">sblocks</span>
-            <span class="badge badge-dev">In Development</span>
-          </div>
-          <p class="model-desc">
-            Stacked block-diagonal GMRF on latent dim <code>p &times; n</code>.
-            Precision is <code>diag(exp(&theta;<sub>1</sub>) R<sub>1</sub>, &hellip;, exp(&theta;<sub>p</sub>) R<sub>p</sub>)</code>,
-            so each of the <code>p</code> blocks runs independently with its
-            own precision matrix and log-precision hyperparameter.
-          </p>
-          <div class="model-tags">
-            <span class="tag">Block-diagonal</span>
-            <span class="tag">Per-block precision</span>
-            <span class="tag">cgeneric</span>
-          </div>
+            <a href="https://github.com/esmail-abdulfattah/gmrfs" target="_blank" class="model-name card-link">sblocks</a>          </div>
+          <p class="model-desc"><code>p</code> independent blocks, each with its own precision.</p>
           <div class="model-links">
-            <a href="https://github.com/esmail-abdulfattah/gmrfs" target="_blank" class="btn-card btn-card-outline">GitHub</a>
+            <a href="https://github.com/esmail-abdulfattah/gmrfs" target="_blank" class="btn-card">GitHub</a>
           </div>
         </div>
       </div>
@@ -160,24 +120,10 @@
         </div>
         <div class="model-body">
           <div class="model-header">
-            <span class="model-name">cblocks</span>
-            <span class="badge badge-dev">In Development</span>
-          </div>
-          <p class="model-desc">
-            Collapsed multi-block GMRF: <code>p</code> dense covariance
-            matrices combined into a single latent effect of size
-            <code>n</code> with covariance
-            <code>&Sigma;(&theta;) = &sum;<sub>j</sub> exp(&minus;&theta;<sub>j</sub>) G<sub>j</sub></code>.
-            Each block carries its own log-precision, enabling adaptive
-            weighting of competing covariance structures within one effect.
-          </p>
-          <div class="model-tags">
-            <span class="tag">Multi-covariance</span>
-            <span class="tag">Adaptive weighting</span>
-            <span class="tag">cgeneric</span>
-          </div>
+            <a href="https://github.com/esmail-abdulfattah/gmrfs" target="_blank" class="model-name card-link">cblocks</a>          </div>
+          <p class="model-desc">One effect whose covariance is a weighted sum of <code>p</code> covariances.</p>
           <div class="model-links">
-            <a href="https://github.com/esmail-abdulfattah/gmrfs" target="_blank" class="btn-card btn-card-outline">GitHub</a>
+            <a href="https://github.com/esmail-abdulfattah/gmrfs" target="_blank" class="btn-card">GitHub</a>
           </div>
         </div>
       </div>
@@ -189,24 +135,10 @@
         </div>
         <div class="model-body">
           <div class="model-header">
-            <span class="model-name">pblocks</span>
-            <span class="badge badge-dev">In Development</span>
-          </div>
-          <p class="model-desc">
-            Partial split GMRF on latent dim <code>2n</code>: the chosen
-            block is separated with its own precision
-            <code>exp(&theta;<sub>1</sub>) R<sub>1</sub></code>, while the
-            remaining <code>p &minus; 1</code> covariances are collapsed
-            into a single pooled second block. Useful when one component
-            should keep its distinct structure and the rest can share scale.
-          </p>
-          <div class="model-tags">
-            <span class="tag">Two-block split</span>
-            <span class="tag">Pooled precision</span>
-            <span class="tag">cgeneric</span>
-          </div>
+            <a href="https://github.com/esmail-abdulfattah/gmrfs" target="_blank" class="model-name card-link">pblocks</a>          </div>
+          <p class="model-desc">One block with its own precision; the other <code>p &minus; 1</code> pooled.</p>
           <div class="model-links">
-            <a href="https://github.com/esmail-abdulfattah/gmrfs" target="_blank" class="btn-card btn-card-outline">GitHub</a>
+            <a href="https://github.com/esmail-abdulfattah/gmrfs" target="_blank" class="btn-card">GitHub</a>
           </div>
         </div>
       </div>
@@ -220,70 +152,30 @@
   <div class="inner">
     <h2 class="section-title">Publications</h2>
 
-    <div class="paper-card">
-      <div class="paper-meta">Int. J. Environ. Res. Public Health &middot; 2026</div>
-      <h3 class="paper-title">
-        <a href="https://www.mdpi.com/1660-4601/23/2/247" target="_blank">
-          Impacts of Social Environments on Neighborhood Depression Incidence: Fully Accounting for Spatial Effects
-        </a>
-      </h3>
-      <p class="paper-authors">Peter Congdon, Esmail Abdul-Fattah</p>
-      <div class="paper-tags">
-        <span class="tag">fbesag</span>
-        <span class="tag">INLA</span>
-        <span class="tag">Spatially varying coefficients</span>
-      </div>
-    </div>
+    <ol class="pub-list">
+      <li>
+        <span class="pub-year">2026</span>
+        <div>
+          Congdon, P. and <strong>Abdul-Fattah, E.</strong>
+          <a href="https://www.mdpi.com/1660-4601/23/2/247" target="_blank">Impacts of social environments on neighborhood depression incidence: fully accounting for spatial effects</a>.
+          <em>International Journal of Environmental Research and Public Health</em>.
+        </div>
+      </li>
+      <li>
+        <span class="pub-year">2024</span>
+        <div>
+          <strong>Abdul-Fattah, E.</strong>, Krainski, E., Van Niekerk, J. and Rue, H.
+          <a href="https://journals.sagepub.com/doi/full/10.1177/09622802241244613" target="_blank">Non-stationary Bayesian spatial model for disease mapping based on sub-regions</a>.
+          <em>Statistical Methods in Medical Research</em>.
+        </div>
+      </li>
+    </ol>
 
-    <div class="paper-card">
-      <div class="paper-meta">Statistical Methods in Medical Research &middot; 2024</div>
-      <h3 class="paper-title">
-        <a href="https://journals.sagepub.com/doi/full/10.1177/09622802241244613" target="_blank">
-          Non-stationary Bayesian spatial model for disease mapping based on sub-regions
-        </a>
-      </h3>
-      <p class="paper-authors">Esmail Abdul-Fattah, Elias Krainski, Janet Van Niekerk, Haavard Rue</p>
-      <div class="paper-tags">
-        <span class="tag">fbesag</span>
-        <span class="tag">INLA</span>
-        <span class="tag">Disease mapping</span>
-      </div>
-    </div>
-
-  </div>
-</section>
-
-<!-- ── COLLABORATE ── -->
-<section id="collab" class="section">
-  <div class="inner">
-    <h2 class="section-title">Collaborate</h2>
-    <p>
-      These models open new directions in non-stationary spatial modeling and
-      flexible Bayesian inference. If you are interested in collaborating on
-      methodology, applications, or software development, I would love to hear from you.
-    </p>
-    <div class="collab-grid">
-      <div class="collab-item">
-        <div class="collab-title">Applications</div>
-        Epidemiology, environmental science, ecology, and social science problems
-        where spatial stationarity is in question.
-      </div>
-      <div class="collab-item">
-        <div class="collab-title">Methodology</div>
-        Extensions to spatio-temporal models, non-stationary priors,
-        and scalable inference for large areal datasets.
-      </div>
-      <div class="collab-item">
-        <div class="collab-title">Software</div>
-        R package development, integration with R-INLA, and
-        implementation of novel GMRF structures.
-      </div>
-    </div>
   </div>
 </section>
 
 <!-- ── CONTACT ── -->
-<section id="contact" class="section section-alt">
+<section id="contact" class="section">
   <div class="inner">
     <h2 class="section-title">Contact</h2>
     <div class="contact-card">

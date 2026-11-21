@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>fbym2 | gmrfs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="guide.css">
+  <script>
+    window.MathJax = { tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['$$','$$'], ['\\[','\\]']] } };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav container">
+      <a class="brand" href="index.html">gmrfs</a>
+      <ul class="links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="index.html#models">Models</a></li>
+        <li><a href="fbesag.html">fbesag</a></li>
+        <li><a class="current" href="fbym2.html">fbym2</a></li>
+        <li><a href="https://github.com/esmail-abdulfattah/gmrfs">GitHub</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <p class="back-link"><a href="index.html#models">&larr; Back to the models</a></p>
+
+    <header class="page-hero">
+      <div class="eyebrow">gmrfs &middot; latent models</div>
+      <h1>fbym2</h1>
+      <p class="lead">A non-stationary spatial model with noise: a spatial part whose smoothness differs between sub-regions, plus noise of each area.</p>
+    </header>
+
+    <section>
+      <h2>Idea</h2>
+      <p>The effect of each area is a spatial part, shared with its neighbours, plus noise of its own. The spatial part is an <a href="fbesag.html">fbesag</a> field, so its smoothness differs between sub-regions. With the same smoothness everywhere it is the BYM2 model (Riebler et al., 2016), with the same priors, so comparing the two tests whether the map is non-stationary. When the sub-regions do not differ, the estimates are almost the same as BYM2's (see the <a href="#check">check</a>).</p>
+    </section>
+
+    <section>
+      <h2>Model</h2>
+      <div class="math-block">$$\mathbf v = \frac{1}{\sqrt\tau}\Big(\sqrt{1-\phi}\;\mathbf w + \sqrt{\phi}\;\mathbf u\Big), \qquad \mathbf w \sim \mathcal N(\mathbf 0, I),$$</div>
+      <div class="math-block">$$\pi(\mathbf u \mid \mathbf d) \propto \exp\Big(-\frac{1}{2} \sum_{i \sim j} \frac{e^{d_{k(i)}} + e^{d_{k(j)}}}{2}\, (u_i - u_j)^2\Big), \qquad \sum_k d_k = 0 .$$</div>
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>parameter</th><th>meaning</th></tr></thead>
+        <tbody>
+          <tr><td><strong>$\tau$</strong></td><td>precision of $v_i$</td></tr>
+          <tr><td><strong>$\phi$</strong></td><td>spatial share of the variance</td></tr>
+          <tr><td><strong>$d_k$</strong></td><td>log precision of the spatial part in sub-region $k$, relative to the map: $d_k &gt; 0$ smoother, $d_k &lt; 0$ rougher</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p>As in INLA's bym2, the latent vector is $(\mathbf v, \mathbf u)$, of length $2n$:</p>
+      <div class="math-block">$$Q = \begin{pmatrix} \dfrac{\tau}{1-\phi} I & -\dfrac{\sqrt{\phi\tau}}{1-\phi} I \\[1.5ex] -\dfrac{\sqrt{\phi\tau}}{1-\phi} I & \dfrac{\phi}{1-\phi} I + Q_{\text{fb}}(\mathbf d) \end{pmatrix}.$$</div>
+    </section>
+
+    <section>
+      <h2>Priors</h2>
+      <p>$\boldsymbol\theta = (\log\tau,\ \text{logit}\,\phi,\ d_1, \dots, d_{P-1})$, reported as <code>Theta1</code>, <code>Theta2</code>, &hellip;; $d_P = -(d_1 + \dots + d_{P-1})$.</p>
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>parameter</th><th>prior</th><th>default</th><th>meaning</th></tr></thead>
+        <tbody>
+          <tr><td><strong>$\tau$</strong></td><td>PC</td><td><code>prec = c(1, 0.01)</code></td><td>$P(1/\sqrt\tau &gt; 1) = 0.01$</td></tr>
+          <tr><td><strong>$\phi$</strong></td><td>PC of BYM2</td><td><code>phi = c(0.5, 0.5)</code></td><td>$P(\phi &lt; 0.5) = 0.5$</td></tr>
+          <tr><td><strong>$\mathbf d$</strong></td><td>$\mathcal N\big(\mathbf 0, \sigma_\gamma^2 (I - \tfrac1P J)\big)$</td><td><code>sd_gamma = 0.2</code></td><td>as in fbesag; $\sigma_\gamma \to 0$ gives bym2</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>Example: rough and smooth regions</h2>
+      <p>Simulated on the 558 microregions of Brazil (<a href="data/brazil_558_microregions.RData">brazil_558_microregions.RData</a>), 5 expected cases each.</p>
+      <figure style="max-width: 460px; margin-left: auto; margin-right: auto;"><img src="images/fbym2_sim_regions.png" alt="Map of Brazil: North and Northeast rough, Southeast and South smooth, Centre-West in between"><figcaption>The true $d_k$.</figcaption></figure>
+      <pre><code>library(INLA)
+library(gmrfs)
+
+load("brazil_558_microregions.RData")      <span class="code-cmt"># graph, map_df</span>
+region &lt;- map_df$region_code               <span class="code-cmt"># 1 North, 2 Northeast, 3 Southeast, 4 South, 5 Centre-West</span>
+m_regions &lt;- fbym2(graph, id = region, sd_gamma = 1)
+
+<span class="code-cmt"># theta = (log tau, logit phi, d_1, ..., d_4); d_5 = 0</span>
+set.seed(1)
+v &lt;- gmrf_sample(m_regions, theta = c(1, qlogis(0.8), -2, -2, 2, 2))[1:558]
+E &lt;- rep(5, 558)
+d &lt;- list(y = rpois(558, E * exp(v)), E = E, idx = 1:558)
+
+fit_regions &lt;- inla(y ~ 1 + f(idx, model = m_regions), family = "poisson", E = E, data = d)
+fit_bym2    &lt;- inla(y ~ 1 + f(idx, model = "bym2", graph = graph), family = "poisson", E = E, data = d)
+
+round(fit_regions$summary.hyperpar[, c("mean", "0.025quant", "0.975quant")], 2)
+fit_regions$mlik[2] - fit_bym2$mlik[2]     <span class="code-cmt"># log Bayes factor for the regions</span></code></pre>
+      <pre class="output"><code>                mean 0.025quant 0.975quant
+Theta1 for idx  0.87       0.52       1.22
+Theta2 for idx  1.70       0.64       2.75
+Theta3 for idx -1.68      -2.29      -1.07
+Theta4 for idx -1.81      -2.29      -1.33
+Theta5 for idx  1.52       0.66       2.39
+Theta6 for idx  1.64       0.56       2.72
+[1] 56.71699</code></pre>
+
+      <h3>Regional deviations</h3>
+      <pre><code>set.seed(1)
+th &lt;- inla.hyperpar.sample(4000, fit_regions, intern = TRUE)   <span class="code-cmt"># log tau, logit phi, d_1, ..., d_4</span>
+dk &lt;- cbind(th[, 3:6], -rowSums(th[, 3:6]))                     <span class="code-cmt"># d_5 = -(d_1 + ... + d_4)</span>
+colnames(dk) &lt;- c("North", "Northeast", "Southeast", "South", "Centre-West")
+q &lt;- apply(dk, 2, quantile, c(0.025, 0.5, 0.975))
+round(q, 2)
+
+library(ggplot2)
+qd &lt;- data.frame(region = colnames(q), lo = q[1, ], mid = q[2, ], hi = q[3, ])
+ggplot(qd, aes(y = region, x = mid, xmin = lo, xmax = hi)) + geom_pointrange() + geom_vline(xintercept = 0)</code></pre>
+      <pre class="output"><code>      North Northeast Southeast South Centre-West
+2.5%  -2.28     -2.28      0.68  0.54       -0.46
+50%   -1.69     -1.81      1.52  1.64        0.33
+97.5% -1.09     -1.33      2.39  2.72        1.12</code></pre>
+      <figure><img src="images/fbym2_sim_dk.png" alt="Posterior medians and 95 percent intervals of d_k for each region, with the true values"><figcaption>$d_k$, median and 95% interval, and the truth.</figcaption></figure>
+
+      <h3>Estimates</h3>
+      <pre><code><span class="code-cmt"># error of the posterior mean of v, by region</span>
+rmse &lt;- function(fit) sqrt(tapply((fit$summary.random$idx$mean[1:558] - v)^2, region, mean))
+round(rbind(bym2 = rmse(fit_bym2), fbym2 = rmse(fit_regions)), 2)
+
+map_df$truth &lt;- v
+map_df$bym2  &lt;- fit_bym2$summary.random$idx$mean[1:558]
+map_df$fbym2 &lt;- fit_regions$summary.random$idx$mean[1:558]
+ggplot(map_df) + geom_sf(aes(fill = fbym2), colour = NA) + scale_fill_gradient2()</code></pre>
+      <pre class="output"><code>         1    2    3    4    5
+bym2  0.72 0.59 0.34 0.35 0.36
+fbym2 0.66 0.50 0.25 0.28 0.33</code></pre>
+      <figure><img src="images/fbym2_sim_maps.png" alt="Maps of the true v and the posterior means from bym2 and fbym2"><figcaption>Posterior mean of $v_i$.</figcaption></figure>
+      <p>The two estimates differ by 0.11 to 0.16 on average, too little to see on this colour scale. With one spatial precision, bym2 smooths the North more than fbym2 and the Southeast and South less; its error is higher in every region.</p>
+    </section>
+
+    <section id="check">
+      <h2>Repeated: 20 data sets</h2>
+      <p>20 simulated data sets for each truth: the example above, and no difference between the regions.</p>
+      <figure><img src="images/fbym2_sim_rmse.png" alt="RMSE of the posterior mean of v by region for bym2 and fbym2, averaged over 20 simulated data sets"><figcaption>Error of the posterior mean of $v_i$, by region.</figcaption></figure>
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>truth</th><th></th><th>model</th><th class="num">North</th><th class="num">Northeast</th><th class="num">Southeast</th><th class="num">South</th><th class="num">Centre-West</th></tr></thead>
+        <tbody>
+          <tr><td><strong>regions differ</strong></td><td>RMSE</td><td>bym2</td><td class="num">0.527</td><td class="num">0.495</td><td class="num">0.328</td><td class="num">0.345</td><td class="num">0.331</td></tr>
+          <tr><td></td><td></td><td>fbym2</td><td class="num">0.485</td><td class="num">0.442</td><td class="num">0.250</td><td class="num">0.258</td><td class="num">0.303</td></tr>
+          <tr><td></td><td>coverage</td><td>bym2</td><td class="num">0.886</td><td class="num">0.889</td><td class="num">0.977</td><td class="num">0.973</td><td class="num">0.968</td></tr>
+          <tr><td></td><td></td><td>fbym2</td><td class="num">0.928</td><td class="num">0.946</td><td class="num">0.959</td><td class="num">0.953</td><td class="num">0.937</td></tr>
+          <tr><td><strong>no difference</strong>, all $d_k = 0$</td><td>RMSE</td><td>bym2</td><td class="num">0.316</td><td class="num">0.320</td><td class="num">0.320</td><td class="num">0.301</td><td class="num">0.302</td></tr>
+          <tr><td></td><td></td><td>fbym2</td><td class="num">0.318</td><td class="num">0.321</td><td class="num">0.321</td><td class="num">0.303</td><td class="num">0.306</td></tr>
+          <tr><td></td><td>coverage</td><td>bym2</td><td class="num">0.949</td><td class="num">0.945</td><td class="num">0.945</td><td class="num">0.941</td><td class="num">0.957</td></tr>
+          <tr><td></td><td></td><td>fbym2</td><td class="num">0.943</td><td class="num">0.949</td><td class="num">0.942</td><td class="num">0.943</td><td class="num">0.945</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p>When the regions differ, fbym2 has the lower error in 16 to 20 of the 20 data sets in every region, and the log BF favours it in all 20 (38 to 74). When they do not, the two are almost the same (error at most 0.004 higher), and the log BF has median $-2.3$ and is at most 1.4.</p>
+    </section>
+
+    <section>
+      <h2>Testing for non-stationarity</h2>
+      <div class="math-block">$$\log \text{BF} = \log \pi(\mathbf y \mid \text{fbym2}) - \log \pi(\mathbf y \mid \text{bym2})$$</div>
+      <p>If you change the priors of fbym2, give bym2 the same <code>hyper</code>.</p>
+      <p>Beyond $\text{logit}\,\phi = 12$, INLA's bym2 prior is flat (improper) and fbym2's is the exact PC tail. If the posterior of $\phi$ reaches 1, compare with fbym2 with <code>id = rep(1, n)</code> instead of bym2.</p>
+    </section>
+
+    <section>
+      <h2>Use in MCMC</h2>
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>function</th><th>returns</th></tr></thead>
+        <tbody>
+          <tr><td><code>gmrf_Q(m_regions, theta)</code></td><td>the precision matrix of $(\mathbf v, \mathbf u)$</td></tr>
+          <tr><td><code>gmrf_log_prior(m_regions, theta)</code></td><td>the log prior of $\boldsymbol\theta$</td></tr>
+          <tr><td><code>gmrf_log_density(m_regions, x, theta)</code></td><td>$\log \pi(\mathbf v, \mathbf u \mid \boldsymbol\theta)$, with the sum-to-zero constraints</td></tr>
+          <tr><td><code>gmrf_sample(m_regions, theta)</code></td><td>draws of $(\mathbf v, \mathbf u) \mid \boldsymbol\theta$ on the constraints</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p>Example: <code>demo("fbym2_mcmc", package = "gmrfs")</code>.</p>
+    </section>
+
+    <section>
+      <h2>References</h2>
+      <ul class="refs">
+        <li>Abdul-Fattah, E., Krainski, E., Van Niekerk, J. and Rue, H. (2024). Non-stationary Bayesian spatial model for disease mapping based on sub-regions. <em>Statistical Methods in Medical Research</em>, 33(6), 1093&ndash;1111. <a href="https://doi.org/10.1177/09622802241244613">doi:10.1177/09622802241244613</a></li>
+        <li>Riebler, A., S&oslash;rbye, S. H., Simpson, D. and Rue, H. (2016). An intuitive Bayesian spatial model for disease mapping that accounts for scaling. <em>Statistical Methods in Medical Research</em>, 25, 1145&ndash;1165.</li>
+        <li>Simpson, D., Rue, H., Riebler, A., Martins, T. G. and S&oslash;rbye, S. H. (2017). Penalising model component complexity: a principled, practical approach to constructing priors. <em>Statistical Science</em>, 32, 1&ndash;28.</li>
+        <li>S&oslash;rbye, S. H. and Rue, H. (2014). Scaling intrinsic Gaussian Markov random field priors in spatial modelling. <em>Spatial Statistics</em>, 8, 39&ndash;51.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container"><a href="fbesag.html">&larr; fbesag</a> &middot; <a href="index.html#models">Back to the models</a></div>
+  </footer>
+</body>
+</html>

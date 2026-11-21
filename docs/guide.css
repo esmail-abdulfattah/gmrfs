@@ -1,0 +1,90 @@
+/* Model pages (fbesag.html, fbym2.html): a plain book layout, as the
+   application pages of pyinla.org. White page, teal titles, amber rule under
+   each section title, three-rule tables, dark code and light output. */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #ffffff;
+  color: #1a1a1a;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
+  font-size: 1.02rem;
+  line-height: 1.65;
+}
+
+a { color: #0b7f82; }
+
+.container { width: 92%; max-width: 920px; margin: 0 auto; }
+
+/* header */
+.site-header { border-bottom: 1px solid rgba(2,6,23,0.08); background: #ffffff; }
+.nav { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.9rem 0; max-width: 1140px; }
+.brand { font-weight: 800; font-size: 1.15rem; color: #0f172a; text-decoration: none; letter-spacing: -0.02em; }
+.links { display: flex; gap: 0.4rem; list-style: none; margin: 0; padding: 0; flex-wrap: wrap; }
+.links a { color: #475569; text-decoration: none; padding: 0.35rem 0.55rem; border-radius: 0.4rem; font-size: 0.95rem; }
+.links a:hover { color: #0ea5a8; }
+.links a.current { color: #0b7f82; font-weight: 600; }
+
+main { padding: 2rem 0 1rem; }
+
+.back-link { margin: 0 0 1rem; font-size: 0.95rem; }
+.back-link a { color: #555; text-decoration: none; }
+
+/* title block */
+.page-hero { border-bottom: 2px solid #0ea5a8; padding: 0 0 1.2rem; margin-bottom: 2rem; }
+.eyebrow { color: #0ea5a8; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem; }
+.page-hero h1 { color: #0ea5a8; font-size: 2.2rem; font-weight: 800; line-height: 1.2; margin: 0 0 0.5rem; }
+.page-hero .lead { color: #333; font-size: 1.1rem; margin: 0; max-width: 65ch; }
+
+/* sections */
+section { margin: 0 0 2.4rem; }
+section h2 { color: #0b7f82; font-size: 1.4rem; font-weight: 700; margin: 0 0 0.7rem; scroll-margin-top: 1rem; }
+section h2::after { content: ""; display: block; width: 2.5rem; height: 3px; margin-top: 0.4rem; background: #f59e0b; }
+section h3 { color: #0b7f82; font-size: 1.08rem; font-weight: 600; margin: 1.4rem 0 0.4rem; }
+section p, section ul, section ol { margin: 0 0 0.9rem; }
+section ul, section ol { padding-left: 1.4rem; }
+section li { margin: 0.3rem 0; }
+section li::marker { color: #0ea5a8; }
+strong { color: #0f3d4a; }
+
+/* tables: three rules */
+.table-wrap { overflow-x: auto; margin: 0.8rem 0 1rem; }
+table { width: 100%; border-collapse: collapse; font-size: 0.97rem; font-variant-numeric: tabular-nums;
+        border-top: 2px solid #0ea5a8; border-bottom: 2px solid #0ea5a8; }
+thead { border-bottom: 1px solid #0ea5a8; }
+th { color: #0b7f82; font-weight: 600; text-align: left; }
+th, td { padding: 0.4rem 0.8rem 0.4rem 0.5rem; vertical-align: top; }
+tbody tr + tr td { border-top: 1px solid #e5eef0; }
+td.num, th.num { text-align: right; }
+
+/* code and output */
+pre { background: #0A2A36; color: #e5e7eb; border-radius: 0.5rem; padding: 1rem 1.1rem; overflow-x: auto;
+      font-size: 0.86rem; line-height: 1.55; margin: 0.8rem 0; }
+pre code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+pre .code-cmt { color: #8fb3bd; }
+pre.output { background: #f7f7f7; color: #333; border-left: 2px solid #c8c8c8; border-radius: 0; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; color: #0d7f7a; font-size: 0.9em; }
+pre code { color: inherit; font-size: inherit; }
+
+.math-block { text-align: center; color: #0f3d4a; overflow-x: auto; margin: 0.6rem 0 0.9rem; }
+
+/* figures */
+figure { margin: 1.4rem 0; }
+figure img { width: 100%; height: auto; display: block; }
+figcaption { color: #555; font-size: 0.92rem; margin-top: 0.5rem; }
+.fig-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+.refs li { font-size: 0.95rem; }
+
+footer { border-top: 2px solid #0ea5a8; margin-top: 2.5rem; padding: 1.2rem 0 2rem; font-size: 0.95rem; color: #555; }
+footer a { color: #0b7f82; text-decoration: none; }
+
+@media (max-width: 680px) {
+  .page-hero h1 { font-size: 1.8rem; }
+  .fig-pair { grid-template-columns: 1fr; }
+  .links a { padding: 0.3rem 0.35rem; font-size: 0.9rem; }
+}
+
+/* short code in tables stays on one line; the table scrolls if needed */
+td code, th code { white-space: nowrap; }

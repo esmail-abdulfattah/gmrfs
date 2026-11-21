@@ -275,7 +275,7 @@ p:last-child { margin-bottom: 0; }
 }
 
 /* ── Tags ── */
-.model-tags, .paper-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.1rem; }
+.model-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.1rem; }
 
 .tag {
   font-size: 0.7rem;
@@ -319,43 +319,24 @@ p:last-child { margin-bottom: 0; }
   border-radius: 6px;
 }
 
-/* ── Paper Card ── */
-.paper-card {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--accent);
-  border-radius: var(--radius);
-  padding: 1.5rem 1.8rem;
-  box-shadow: var(--shadow);
+/* ── Publications ── */
+.pub-list { list-style: none; padding: 0; margin: 0; }
+
+.pub-list li {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr;
+  gap: 1rem;
+  padding: 0.9rem 0;
+  line-height: 1.6;
 }
 
-.paper-card + .paper-card { margin-top: 1.4rem; }
+.pub-list li:first-child { padding-top: 0; }
+.pub-list li + li { border-top: 1px solid var(--border); }
 
-.paper-meta {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--accent);
-  margin-bottom: 0.45rem;
-}
+.pub-year { color: var(--muted); font-variant-numeric: tabular-nums; }
 
-.paper-title {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--navy);
-  line-height: 1.45;
-  margin-bottom: 0.35rem;
-}
-
-.paper-title a { color: var(--navy); }
-.paper-title a:hover { color: var(--accent); text-decoration: none; }
-
-.paper-authors {
-  font-size: 0.875rem;
-  color: var(--muted);
-  margin-bottom: 0.8rem;
-}
+.pub-list a { color: var(--navy); text-decoration: underline; text-underline-offset: 2px; text-decoration-color: var(--border); }
+.pub-list a:hover { color: var(--accent); text-decoration-color: currentColor; }
 
 /* ── Collaborate ── */
 .collab-grid {
@@ -428,3 +409,10 @@ p:last-child { margin-bottom: 0; }
   .nav-links a:not(.nav-github) { display: none; }
   .footer .inner { flex-direction: column; gap: 0.5rem; text-align: center; }
 }
+
+/* ── Whole model card clickable ── */
+.model-card { position: relative; cursor: pointer; }
+.card-link { color: var(--navy); text-decoration: none; }
+.card-link:hover { text-decoration: none; }
+.card-link::after { content: ""; position: absolute; inset: 0; z-index: 1; }
+.model-links a { position: relative; z-index: 2; }

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>fbesag with scattered sub-regions | gmrfs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="guide.css">
+  <script>
+    window.MathJax = { tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['$$','$$'], ['\\[','\\]']] } };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav container">
+      <a class="brand" href="index.html">gmrfs</a>
+      <ul class="links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="index.html#models">Models</a></li>
+        <li><a class="current" href="fbesag.html">fbesag</a></li>
+        <li><a href="fbym2.html">fbym2</a></li>
+        <li><a href="https://github.com/esmail-abdulfattah/gmrfs">GitHub</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <p class="back-link"><a href="fbesag.html">&larr; Back to fbesag</a></p>
+
+    <header class="page-hero">
+      <div class="eyebrow">gmrfs &middot; fbesag</div>
+      <h1>Sub-regions that are not neighbours</h1>
+      <p class="lead">The sub-regions can be any grouping of the areas.</p>
+    </header>
+
+    <section>
+      <h2>Urban and rural</h2>
+      <p>The 558 microregions of Brazil: 309 more than 70% urban, 249 not.</p>
+      <div class="fig-pair">
+        <figure><img src="images/fbesag_groups.png" alt="Map of Brazil with the urban and rural microregions"><figcaption>The two groups.</figcaption></figure>
+        <figure><img src="images/fbesag_groups_tau.png" alt="Map of the log precision of each microregion in the example"><figcaption>$\log\tau_i$ in the example below.</figcaption></figure>
+      </div>
+    </section>
+
+    <section>
+      <h2>Example</h2>
+      <p>Simulated: urban rough ($\theta = -0.5$), rural smooth ($\theta = 1.5$).</p>
+      <pre><code>library(INLA)
+library(gmrfs)
+
+load("brazil_558_microregions.RData")              <span class="code-cmt"># data, graph, map_df</span>
+group &lt;- ifelse(map_df$urban &gt; 70, 1, 2)           <span class="code-cmt"># 1: more than 70% urban, 2: the rest</span>
+m     &lt;- fbesag(graph, id = group, sd_gamma = 1)
+
+<span class="code-cmt">## data simulated from fbesag: urban microregions rough, rural ones smooth</span>
+april &lt;- subset(data, T1 == 4)
+E     &lt;- april$E * sum(april$Y) / sum(april$E)
+set.seed(1)
+x     &lt;- as.numeric(gmrf_sample(m, theta = c(-0.5, 1.5)))
+d     &lt;- list(y = rpois(558, E * exp(x)), E = E, idx = 1:558)
+
+fit_besag  &lt;- inla(y ~ 1 + f(idx, model = fbesag(graph, id = rep(1, 558))),
+                   family = "poisson", E = E, data = d)
+fit_groups &lt;- inla(y ~ 1 + f(idx, model = m), family = "poisson", E = E, data = d)
+
+round(fit_groups$summary.hyperpar[, c("mean", "0.025quant", "0.975quant")], 2)
+fit_groups$mlik[2] - fit_besag$mlik[2]             <span class="code-cmt"># log Bayes factor for the groups</span></code></pre>
+      <pre class="output"><code>                mean 0.025quant 0.975quant
+Theta1 for idx -0.39      -0.60      -0.17
+Theta2 for idx  1.45       1.27       1.63
+[1] 63.92342</code></pre>
+      <p>Both intervals cover the truth. With the default $\sigma_\gamma = 0.2$ the estimates are pulled together ($-0.17$, $1.26$) and miss it.</p>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="container"><a href="fbesag.html">&larr; Back to fbesag</a></div>
+  </footer>
+</body>
+</html>

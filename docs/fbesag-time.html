@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>fbesag in time | gmrfs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="guide.css">
+  <script>
+    window.MathJax = { tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['$$','$$'], ['\\[','\\]']] } };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav container">
+      <a class="brand" href="index.html">gmrfs</a>
+      <ul class="links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="index.html#models">Models</a></li>
+        <li><a class="current" href="fbesag.html">fbesag</a></li>
+        <li><a href="fbym2.html">fbym2</a></li>
+        <li><a href="https://github.com/esmail-abdulfattah/gmrfs">GitHub</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <p class="back-link"><a href="fbesag.html">&larr; Back to fbesag</a></p>
+
+    <header class="page-hero">
+      <div class="eyebrow">gmrfs &middot; fbesag</div>
+      <h1>fbesag in time</h1>
+      <p class="lead">On a time line, fbesag is a random walk whose step size differs between periods.</p>
+    </header>
+
+    <section>
+      <h2>A time line as a graph</h2>
+      <p>With neighbours $t-1$ and $t+1$ and one precision, the model is a first-order random walk:</p>
+      <div class="math-block">$$x_t - x_{t-1} \sim \mathcal N\Big(0,\ \frac{1}{c\,\tau}\Big),$$</div>
+      <p>Here $c$ scales the model so that, with $\tau = 1$, the geometric mean of the marginal variances is 1. In fbesag a step inside period $k$ has precision $c\,\tau_k$; across periods, the mean of the two. A period need not be consecutive: below, one is the season of every year.</p>
+    </section>
+
+    <section>
+      <h2>Example</h2>
+      <p>Four years of simulated weekly counts: rough in weeks 6 to 26 ($\theta = -1$), smooth otherwise ($\theta = 2$).</p>
+      <pre><code>library(INLA)
+library(gmrfs)
+library(Matrix)
+
+n      &lt;- 4 * 52                                    <span class="code-cmt"># four years of weeks</span>
+week   &lt;- rep(1:52, 4)
+season &lt;- ifelse(week &gt;= 6 &amp; week &lt;= 26, 1, 2)      <span class="code-cmt"># 1: epidemic season, 2: the rest of the year</span>
+<span class="code-cmt"># the time line: each week is a neighbour of the next one</span>
+W      &lt;- sparseMatrix(i = 1:(n - 1), j = 2:n, x = 1, dims = c(n, n), symmetric = TRUE)
+
+m_one    &lt;- fbesag(W, id = rep(1, n))               <span class="code-cmt"># one precision: a random walk</span>
+m_season &lt;- fbesag(W, id = season, sd_gamma = 1)    <span class="code-cmt"># one precision for the season, one for the rest</span>
+
+<span class="code-cmt">## simulated: rough in the season, smooth in the rest of the year</span>
+set.seed(3)
+x &lt;- as.numeric(gmrf_sample(m_season, theta = c(-1, 2)))
+E &lt;- rep(50, n)
+d &lt;- list(y = rpois(n, E * exp(x)), E = E, idx = 1:n)
+
+fit_one    &lt;- inla(y ~ 1 + f(idx, model = m_one),    family = "poisson", E = E, data = d)
+fit_season &lt;- inla(y ~ 1 + f(idx, model = m_season), family = "poisson", E = E, data = d)
+
+round(fit_season$summary.hyperpar[, c("mean", "0.025quant", "0.975quant")], 2)
+fit_season$mlik[2] - fit_one$mlik[2]               <span class="code-cmt"># log Bayes factor for the two periods</span></code></pre>
+      <pre class="output"><code>                mean 0.025quant 0.975quant
+Theta1 for idx -0.97      -1.38      -0.57
+Theta2 for idx  1.92       1.29       2.56
+[1] 29.52448</code></pre>
+      <p>Both intervals cover the truth.</p>
+    </section>
+
+    <section>
+      <h2>Precisions</h2>
+      <figure><img src="images/fbesag_time_theta.png" alt="Log precision of the epidemic season and of the rest of the year from fbesag, against the true values and the single precision of a random walk"><figcaption>fbesag (95% intervals) and the truth. Grey: one precision, $-0.09$ ($-0.38$ to $0.21$).</figcaption></figure>
+    </section>
+
+    <section>
+      <h2>Fit</h2>
+      <figure><img src="images/fbesag_time_fit.png" alt="Simulated weekly log relative risk over four years, with the true curve and the fits of a random walk with one precision and of fbesag"><figcaption>Truth, $\log(y/E)$ (grey) and posterior means. Shaded: the season.</figcaption></figure>
+      <p>RMSE outside the season: 0.081 (one precision), 0.066 (fbesag); in the season: 0.145, 0.125.</p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container"><a href="fbesag.html">&larr; Back to fbesag</a></div>
+  </footer>
+</body>
+</html>
